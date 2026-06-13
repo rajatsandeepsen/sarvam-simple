@@ -74,3 +74,5 @@ dist/
 .wrangler
 
 public/*
+*/**/test.ts
+test

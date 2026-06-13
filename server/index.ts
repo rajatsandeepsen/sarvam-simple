@@ -1,15 +1,14 @@
-import { triedAsync } from "@/lib/tools";
-import { appRouter } from "@/server/api";
-import { createContext, createVar } from "@/server/context";
 import { RPCHandler } from "@orpc/server/fetch";
 import { env } from "env";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { triedAsync } from "@/lib/tools";
+import visionServer from "@/sarvam/vision/server";
+import { appRouter } from "@/server/api";
+import { createContext, createVar } from "@/server/context";
 import type { HonoType } from "./context/types";
 import cron from "./cron";
-import { webhook } from "@/sarvam/webhook";
-import { webSocket } from "@/sarvam/websocket";
 
 const app = new Hono<HonoType>({
 	strict: false,
@@ -21,7 +20,11 @@ app.use(
 	cors({
 		origin: env.CORS_ORIGIN || "",
 		allowMethods: ["GET", "POST", "OPTIONS"],
-		allowHeaders: ["Content-Type", "Authorization", "X_SARVAM_JOB_CALLBACK_TOKEN"],
+		allowHeaders: [
+			"Content-Type",
+			"Authorization",
+			"X_SARVAM_JOB_CALLBACK_TOKEN",
+		],
 		credentials: true,
 	}),
 );
@@ -30,8 +33,7 @@ app.get("/", (c) => {
 	return c.text("Hello");
 });
 
-app.route("/webhook", webhook);
-app.route("/ws", webSocket);
+app.route("/vision", visionServer);
 
 app.use(
 	createVar("waitUntil", (c) => {
@@ -64,3 +66,6 @@ export default {
 	fetch: app.fetch,
 	scheduled: cron.scheduled,
 };
+
+// import { SarvamDurableSocket } from "@/sarvam/durable-object";
+// export { SarvamDurableSocket };
