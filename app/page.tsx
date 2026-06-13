@@ -1,30 +1,33 @@
-"use client"
+import Link from "next/link";
+import { Container } from "@/components/container";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
 
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/hooks/api";
-
-export default function Home() {
-	const healthCheck = useQuery(api.healthCheck.queryOptions());
-
+export default function () {
 	return (
-		<div className="container mx-auto max-w-3xl px-4 py-2">
-			<div className="grid gap-6">
-				<section className="rounded-lg border p-4">
-					<h2 className="mb-2 font-medium">API Status</h2>
-					<div className="flex items-center gap-2">
-						<div
-							className={`h-2 w-2 rounded-full ${healthCheck.data ? "bg-green-500" : "bg-red-500"}`}
-						/>
-						<span className="text-sm text-muted-foreground">
-							{healthCheck.isLoading
-								? "Checking..."
-								: healthCheck.data
-									? "Connected"
-									: "Disconnected"}
-						</span>
-					</div>
-				</section>
-			</div>
-		</div>
+		<Container>
+			<Card>
+				<CardHeader>
+					<CardTitle>Simple Sarvam</CardTitle>
+					<CardDescription>
+						Use models from Sarvam.AI in a simplest UI
+					</CardDescription>
+				</CardHeader>
+				<CardFooter className="flex-wrap gap-2">
+					<Button className="grow" asChild>
+						<Link href={"/vision"}>Vision</Link>
+					</Button>
+					<Button className="grow" asChild>
+						<Link href={"/audio"}>Audio</Link>
+					</Button>
+				</CardFooter>
+			</Card>
+		</Container>
 	);
 }
