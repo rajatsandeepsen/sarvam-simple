@@ -128,7 +128,7 @@ export const visionApiSchema = createSchema(
 					upload_urls: z.record(
 						z.string(),
 						z.object({
-							file_url: z.string().url().optional(),
+							file_url: z.string().url(),
 							url: z.string().url().optional(),
 							headers: z.record(z.string(), z.string()).optional(),
 							file_metadata: z.record(z.string(), z.unknown()).nullish(),
@@ -222,7 +222,7 @@ function _mimeType(filename: string): string {
 	}
 }
 
-export async function uploadFile(args: {
+export async function uploadSingleFile(args: {
 	uploadUrl: string;
 	file: Buffer | Uint8Array | Blob;
 	filename: string;

@@ -14,9 +14,42 @@ export const MutationButton = <
 	api,
 	success,
 	onSuccess,
+	onError,
 	...props
 }: {
 	api: UseMutationOptions<TData, TError, TVariables, TOnMutateResult>;
+	onSuccess?: (data: TData) => Promise<void> | void;
+	onError?: (error: TError) => Promise<void> | void;
+} & Omit<
+	Parameters<
+		typeof MutationRenderer<TData, TError, TVariables, TOnMutateResult>
+	>[0],
+	"useMutate"
+>) => {
+	const useMutate = useMutation({
+		...api,
+		onSuccess,
+		onError,
+	});
+
+	return (
+		<MutationRenderer useMutate={useMutate} success={success} {...props} />
+	);
+};
+
+export const MutationRenderer = <
+	TData = unknown,
+	TError = DefaultError,
+	TVariables = void,
+	TOnMutateResult = unknown,
+>({
+	success,
+	useMutate: { isSuccess, isPending, isError, mutate },
+	...props
+}: {
+	useMutate: ReturnType<
+		typeof useMutation<TData, TError, TVariables, TOnMutateResult>
+	>;
 	isSuccess?: React.ReactNode;
 	isPending?: React.ReactNode;
 	isError?: React.ReactNode;
@@ -37,13 +70,7 @@ export const MutationButton = <
 			TOnMutateResult
 		>["mutate"],
 	) => React.ReactNode;
-	onSuccess?: (data: TData) => Promise<void> | void;
 }) => {
-	const { isError, isPending, isSuccess, mutate } = useMutation({
-		...api,
-		onSuccess,
-	});
-
 	if ((success || isSuccess) && props.isSuccess) return props.isSuccess;
 
 	if (isPending && props.isPending) return props.isPending;
