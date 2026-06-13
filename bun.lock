@@ -22,6 +22,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "hono": "^4.9.10",
+        "hono-tanstack-query": "^0.0.3",
         "kuron": "^0.0.3",
         "lucide-react": "^0.487.0",
         "next": "16",
@@ -1174,6 +1175,8 @@
     "hast-util-whitespace": ["hast-util-whitespace@3.0.0", "", { "dependencies": { "@types/hast": "^3.0.0" } }, "sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw=="],
 
     "hono": ["hono@4.9.10", "", {}, "sha512-AlI15ijFyKTXR7eHo7QK7OR4RoKIedZvBuRjO8iy4zrxvlY5oFCdiRG/V/lFJHCNXJ0k72ATgnyzx8Yqa5arug=="],
+
+    "hono-tanstack-query": ["hono-tanstack-query@0.0.3", "", { "peerDependencies": { "@tanstack/react-query": ">=5.0.0", "hono": ">=4.0.0", "react": ">=18.0.0" }, "optionalPeers": ["react"] }, "sha512-ZmSQK/nykvNF9arAbMIEJ6x4cJLpnF1vpXa3qlTcu9gi4aCpHrDGs9fjfGaXiUtZTn8b8cu1ypnI5h3UkFCkmA=="],
 
     "html-to-text": ["html-to-text@9.0.5", "", { "dependencies": { "@selderee/plugin-htmlparser2": "^0.11.0", "deepmerge": "^4.3.1", "dom-serializer": "^2.0.0", "htmlparser2": "^8.0.2", "selderee": "^0.11.0" } }, "sha512-qY60FjREgVZL03vJU6IfMV4GDjGBIoOyvuFdpBDIX9yTlDw0TjxVBQp+P8NvpdIXNJvfWBTNul7fsAQJq2FNpg=="],
 

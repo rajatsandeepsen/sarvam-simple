@@ -24,10 +24,9 @@ import {
 	FileUploadList,
 	FileUploadTrigger,
 } from "@/components/ui/file-upload";
-import { api } from "@/hooks/api";
+import { visionAPI } from "@/hooks/api";
 import { MutationRenderer } from "@/hooks/mutation";
 import { truncateText } from "@/lib/utils";
-import { uploadSingleFile } from "@/sarvam/vision/api";
 
 export default function Home() {
 	return (
@@ -46,17 +45,8 @@ export function FileUploadComponent() {
 	const [files, setFiles] = useState<File[]>([]);
 
 	const mutation = useMutation(
-		api.getURL.mutationOptions({
+		visionAPI.upload.$post.mutationOptions({
 			async onSuccess(data) {
-				await Promise.all(
-					data.uploader.map((u) => {
-						return uploadSingleFile({
-							...u,
-							file: files.find((f) => f.name === u.filename) as File,
-						});
-					}),
-				);
-
 				router.push(`/vision/job?id=${data.job_id}`);
 			},
 		}),
@@ -75,6 +65,7 @@ export function FileUploadComponent() {
 			value={files}
 			onValueChange={setFiles}
 			multiple
+			onFileReject={onFileReject}
 		>
 			<MutationRenderer
 				useMutate={mutation}
@@ -121,7 +112,13 @@ export function FileUploadComponent() {
 
 							<Button
 								disabled={files.length === 0}
-								onClick={() => mutate(files.map((f) => f.name))}
+								onClick={() => {
+									mutate({
+										form: {
+											file: files,
+										},
+									});
+								}}
 							>
 								Upload and Start Processing
 							</Button>

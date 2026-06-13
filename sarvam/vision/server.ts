@@ -1,15 +1,12 @@
 import { Hono } from "hono";
 import { env } from "@/lib/env";
 import { generateId } from "@/lib/utils";
-import type { HonoType } from "@/server/context/types";
 import { visionJobSDK } from ".";
 import { createSarvamVision, uploadSingleFile } from "./api";
 import { webhook } from "./webhook";
 import { webSocket } from "./websocket";
 
-const visionServer = new Hono<HonoType>()
-	.route("/webhook", webhook())
-	.route("/ws", webSocket)
+const visionServer = new Hono()
 	.post("/upload", async (c) => {
 		const body = await c.req.parseBody({ all: true });
 		const value = body["file"];
@@ -24,7 +21,10 @@ const visionServer = new Hono<HonoType>()
 			return c.text("At least one file is required", 400);
 		}
 
-		const folder = files.map((f) => ({ file: f, id: generateId() }));
+		const folder = files.map((f) => ({
+			file: f,
+			id: `${generateId()}.${f.name.split(".").pop()}`,
+		}));
 
 		const sarvamVision = createSarvamVision(env.SARVAM_API_KEY);
 
@@ -46,7 +46,7 @@ const visionServer = new Hono<HonoType>()
 		const api = visionJobSDK(job_id);
 		const upload = await api.uploadFiles(folder.map((f) => f.id));
 
-		c.var.waitUntil(
+		c.executionCtx.waitUntil(
 			(async () => {
 				await Promise.all(
 					upload.map((u) => {
@@ -67,7 +67,6 @@ const visionServer = new Hono<HonoType>()
 
 		return c.json({ job_id });
 	})
-
 	.post("/status", async (c) => {
 		const job_id = c.req.query("job_id");
 
@@ -79,7 +78,22 @@ const visionServer = new Hono<HonoType>()
 		const data = await api.getStatus();
 
 		return c.json(data);
+	})
+	.post("/download", async (c) => {
+		const job_id = c.req.query("job_id");
+
+		if (!job_id) {
+			return c.text("job_id is required", 400);
+		}
+
+		const api = visionJobSDK(job_id);
+		const data = await api.downloadFiles();
+
+		return c.json(data);
 	});
+
+visionServer.route("/webhook", webhook());
+visionServer.route("/ws", webSocket);
 
 export default visionServer;
 export type VisionServerType = typeof visionServer;
