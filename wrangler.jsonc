@@ -2,13 +2,14 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "simple",
 	"compatibility_date": "2025-05-05",
-    "compatibility_flags": ["nodejs_compat"],
+	"compatibility_flags": ["nodejs_compat"],
 	"minify": true,
 	"main": "./server/index.ts",
 	"observability": {
 		"enabled": true
 	},
 	"vars": {
+		"CORS_ORIGIN": "http://localhost:3000",
 		"NODE_ENV": "production",
 		"BUN_VERSION": "1.2.15"
 	},
@@ -19,11 +20,5 @@
 		"not_found_handling": "404-page",
 		"run_worker_first": ["/api/*"]
 	},
-	"send_metrics": false,
-	"kv_namespaces": [
-		{
-			"binding": "KEYVALUE",
-			"id": "ab805c7cb1a24c93b65b8160acdd4086"
-		}
-	],
+	"send_metrics": false
 }

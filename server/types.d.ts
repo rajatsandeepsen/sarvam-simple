@@ -1,8 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
 type CloudflareBinding = {
-	CHAT: DurableObjectNamespace
-	KEYVALUE: KVNamespace
+	SARVAM_DURABLE_SOCKET: DurableObjectNamespace
 };
 
 type WaitUntil = (p: Promise<unknown>) => void

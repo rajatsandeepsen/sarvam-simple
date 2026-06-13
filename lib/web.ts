@@ -1,5 +1,4 @@
 import { env } from "env";
 
 export const getBaseURL = (paths?: string) =>
-	("https://example.com") +
-	(paths ? paths : "");
+	(env.NEXT_PUBLIC_SERVER_URL ?? "") + (paths ? paths : "");
