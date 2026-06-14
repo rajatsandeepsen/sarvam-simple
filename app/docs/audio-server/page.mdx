@@ -1,0 +1,81 @@
+# Audio Server
+
+Install a ready-to-use Hono server for Sarvam Speech-to-Text batch processing.
+
+## Install
+
+```bash
+bunx shadcn@latest add rajatsandeepsen/sarvam-simple/audio-server
+```
+
+## Environment Variable
+
+Get your key from [sarvam.ai](https://dashboard.sarvam.ai)
+
+```env
+SARVAM_API_KEY=your_api_key_here
+```
+
+## Mount in your Hono app
+
+```ts
+import { Hono } from "hono";
+import simpleAudioServer from "./sarvam/audio/server";
+
+const app = new Hono();
+
+app.route("/audio", simpleAudioServer());
+
+export default app;
+```
+
+## Routes
+
+After mounting on `/audio`, available endpoints are:
+
+- `POST /audio/upload`
+- `POST /audio/:id/status`
+- `POST /audio/:id/download`
+
+## Usage
+
+### 1) Upload audio and create job
+
+```ts
+const form = new FormData();
+
+form.set("file", audioFile); // File or multiple files with same key
+form.set("language_code", "en-IN");
+form.set("mode", "transcribe");
+
+const uploadRes = await fetch("/audio/upload", {
+  method: "POST",
+  body: form,
+});
+
+const { id } = await uploadRes.json();
+```
+
+### 2) Check status
+
+```ts
+const statusRes = await fetch(`/audio/${id}/status`, {
+  method: "POST",
+});
+
+const status = await statusRes.json();
+
+console.log(status.job_state);
+```
+
+### 3) Get transcript download URLs (when completed)
+
+```ts
+const downloadRes = await fetch(`/audio/${id}/download`, {
+  method: "POST",
+});
+
+const files = await downloadRes.json();
+
+console.log(files); // [{ filename, url }]
+```

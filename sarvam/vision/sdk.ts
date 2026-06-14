@@ -1,8 +1,12 @@
-import { env } from "@/lib/env";
 import { createSarvamVision } from "./api";
 
-export const visionJobSDK = (job_id: string) => {
-	const sarvamVision = createSarvamVision(env.SARVAM_API_KEY);
+export const visionJobSDK = (
+	job_id: string,
+	{ SARVAM_API_KEY } = {
+		SARVAM_API_KEY: process.env.SARVAM_API_KEY as string,
+	},
+) => {
+	const sarvamVision = createSarvamVision(SARVAM_API_KEY);
 
 	return {
 		getStatus: () =>
@@ -54,4 +58,11 @@ export const visionJobSDK = (job_id: string) => {
 			);
 		},
 	};
+};
+
+export const generateId = () => {
+	const bytes = crypto.getRandomValues(new Uint8Array(16));
+	return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+		"",
+	);
 };

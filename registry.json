@@ -1,0 +1,97 @@
+{
+	"$schema": "https://ui.shadcn.com/schema/registry.json",
+	"name": "sarvam-simple",
+	"homepage": "https://github.com/rajatsandeepsen/sarvam-simple",
+	"items": [
+		{
+			"name": "vision-api",
+			"type": "registry:file",
+			"title": "Sarvam Vision API",
+			"description": "Sarvam Vision API written in better-fetch.js for batch processing",
+			"dependencies": ["zod", "@better-fetch/fetch"],
+			"envVars": {
+				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
+			},
+			"files": [
+				{
+					"path": "sarvam/vision/api.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/vision/api.ts"
+				}
+			]
+		},
+		{
+			"name": "audio-api",
+			"type": "registry:file",
+			"title": "Sarvam Speech-to-Text API",
+			"description": "Sarvam Speech-to-Text API written in better-fetch.js for batch processing",
+			"dependencies": ["zod", "@better-fetch/fetch"],
+			"envVars": {
+				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
+			},
+			"files": [
+				{
+					"path": "sarvam/audio/api.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/audio/api.ts"
+				}
+			]
+		},
+		{
+			"name": "vision-server",
+			"type": "registry:item",
+			"title": "Sarvam Vision Server",
+			"description": "Hono server with Sarvam Vision API for batch processing",
+			"dependencies": [
+				"zod",
+				"hono",
+				"@hono/zod-validator",
+				"@better-fetch/fetch"
+			],
+			"envVars": {
+				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
+			},
+			"registryDependencies": ["rajatsandeepsen/sarvam-simple/vision-api"],
+			"files": [
+				{
+					"path": "sarvam/vision/simple-server.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/vision/server.ts"
+				},
+				{
+					"path": "sarvam/vision/sdk.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/vision/sdk.ts"
+				}
+			]
+		},
+		{
+			"name": "audio-server",
+			"type": "registry:item",
+			"title": "Sarvam Audio Server",
+			"description": "Hono server with Sarvam Audio API for batch processing",
+			"dependencies": [
+				"zod",
+				"hono",
+				"@hono/zod-validator",
+				"@better-fetch/fetch"
+			],
+			"envVars": {
+				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
+			},
+			"registryDependencies": ["rajatsandeepsen/sarvam-simple/audio-api"],
+			"files": [
+				{
+					"path": "sarvam/audio/simple-server.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/audio/server.ts"
+				},
+				{
+					"path": "sarvam/audio/sdk.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/audio/sdk.ts"
+				}
+			]
+		}
+	]
+}

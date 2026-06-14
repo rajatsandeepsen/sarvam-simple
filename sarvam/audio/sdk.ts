@@ -1,8 +1,12 @@
-import { env } from "@/lib/env";
 import { createSarvamAudio } from "./api";
 
-export const audioJobSDK = (job_id: string) => {
-	const sarvamAudio = createSarvamAudio(env.SARVAM_API_KEY);
+export const audioJobSDK = (
+	job_id: string,
+	{ SARVAM_API_KEY } = {
+		SARVAM_API_KEY: process.env.SARVAM_API_KEY as string,
+	},
+) => {
+	const sarvamAudio = createSarvamAudio(SARVAM_API_KEY);
 
 	return {
 		getStatus: () =>
@@ -86,4 +90,11 @@ export const audioJobSDK = (job_id: string) => {
 			);
 		},
 	};
+};
+
+export const generateId = () => {
+	const bytes = crypto.getRandomValues(new Uint8Array(16));
+	return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+		"",
+	);
 };

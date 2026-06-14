@@ -2,14 +2,13 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import z from "zod";
 import { env } from "@/lib/env";
-import { generateId } from "@/lib/utils";
 import { getKV, getWebHook, resolveJobId } from "@/sarvam/utils";
-import { visionJobSDK } from ".";
 import {
 	createSarvamVision,
 	uploadSingleFile,
 	visionJobParametersSchema,
 } from "./api";
+import { generateId, visionJobSDK } from "./sdk";
 import { webhook as webhookServer } from "./webhook";
 import { webSocket as webSocketServer } from "./websocket";
 
@@ -23,10 +22,7 @@ const uploadBaseFormSchema = z.object({
 });
 
 const createUploadFormSchema = uploadBaseFormSchema.extend(
-	visionJobParametersSchema.pick({
-		language: true,
-		output_format: true,
-	}).shape,
+	visionJobParametersSchema.shape,
 );
 
 const visionServer = <KV extends string>({

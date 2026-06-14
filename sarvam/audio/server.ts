@@ -2,14 +2,13 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import z from "zod";
 import { env } from "@/lib/env";
-import { generateId } from "@/lib/utils";
 import { getKV, getWebHook, resolveJobId } from "@/sarvam/utils";
-import { audioJobSDK } from ".";
 import {
 	audioJobParametersSchema,
 	createSarvamAudio,
 	uploadSingleFile,
 } from "./api";
+import { audioJobSDK, generateId } from "./sdk";
 import { webhook as webhookServer } from "./webhook";
 import { webSocket as webSocketServer } from "./websocket";
 
@@ -22,26 +21,9 @@ const uploadBaseFormSchema = z.object({
 	email: z.string().email().optional(),
 });
 
-const parseOptionalBoolean = (value: unknown) => {
-	if (value === true || value === "true") return true;
-	if (value === false || value === "false") return false;
-	return undefined;
-};
-
-const createUploadFormSchema = uploadBaseFormSchema.extend({
-	...audioJobParametersSchema.pick({
-		language_code: true,
-		mode: true,
-	}).shape,
-	with_timestamps: z.preprocess(
-		parseOptionalBoolean,
-		audioJobParametersSchema.shape.with_timestamps,
-	),
-	with_diarization: z.preprocess(
-		parseOptionalBoolean,
-		audioJobParametersSchema.shape.with_diarization,
-	),
-});
+const uploadFormSchema = uploadBaseFormSchema.extend(
+	audioJobParametersSchema.shape,
+);
 
 const audioServer = <KV extends string>({
 	webSocket = false,
@@ -65,7 +47,7 @@ const audioServer = <KV extends string>({
 	}>()
 		.post(
 			"/upload",
-			zValidator("form", createUploadFormSchema),
+			zValidator("form", uploadFormSchema),
 			zValidator("json", idParamSchema.partial().optional()),
 			async (c) => {
 				const kv = getKV(c, kvBinding);

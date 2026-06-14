@@ -24,7 +24,7 @@ const navigationLinks = [
 	{ href: "/", icon: HouseIcon, label: "Home" },
 	{ href: "/vision", icon: EyeIcon, label: "Vision" },
 	{ href: "/audio", icon: AudioLinesIcon, label: "Audio" },
-	// { href: "/docs", icon: BookOpenTextIcon, label: "Docs" },
+	{ href: "/docs", icon: BookOpenTextIcon, label: "Docs" },
 ];
 
 export default function Header() {

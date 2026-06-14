@@ -1,0 +1,96 @@
+# Audio API
+
+Install Sarvam Speech-to-Text helpers and run batch audio jobs from serverless backends.
+
+## Install with shadcn CLI
+
+```bash
+bunx shadcn@latest add rajatsandeepsen/sarvam-simple/audio-api
+```
+
+## Environment Variable
+
+Get your key from [sarvam.ai](https://dashboard.sarvam.ai)
+
+```env
+SARVAM_API_KEY=your_api_key_here
+```
+
+## Usage
+
+```ts
+import { createSarvamAudio, uploadSingleFile } from "./sarvam/audio/api";
+
+const sarvamAudio = createSarvamAudio(process.env.SARVAM_API_KEY!);
+
+// 1) Create a job
+const x1 = await sarvamAudio("/v1", {
+	body: {
+		job_parameters: {
+			language: "en-IN",
+			mode: "transcribe",
+		},
+	},
+	throw: true,
+});
+
+const job_id = x1.job_id;
+
+// 2) Optional: check status
+const x2 = await sarvamAudio("/v1/:job_id/status", {
+	params: { job_id },
+	throw: true,
+});
+console.log(x2.job_state);
+
+// 3) Request upload URL
+const filename = "audio.wav";
+const x3 = await sarvamAudio("/v1/upload-files", {
+	body: {
+		job_id,
+		files: [filename],
+	},
+	throw: true,
+});
+
+const uploadUrl = x3?.upload_urls[filename].file_url;
+if (!uploadUrl) throw new Error("Missing upload URL");
+
+// 4) Upload audio bytes
+await uploadSingleFile({
+	uploadUrl,
+	file: audioBytes, // Buffer | Uint8Array | Blob
+	filename,
+});
+
+// 5) Start job
+const x4 = await sarvamAudio("/v1/:job_id/start", {
+	params: { job_id },
+	throw: true,
+});
+console.log(x4.job_state);
+
+// 6) Poll status
+const x5 = await sarvamAudio("/v1/:job_id/status", {
+	params: { job_id },
+	throw: true,
+});
+console.log(x5.job_details);
+
+// 7) Build output filename from returned file_id and download
+const outFileId = x5.job_details[0].inputs.find(
+	(e) => e.file_name === filename,
+)?.file_id;
+if (!outFileId) throw new Error("Missing out file id");
+
+const outFileName = `${outFileId}.json`;
+
+const x6 = await sarvamAudio("/v1/download-files", {
+	body: {
+		job_id,
+		files: [outFileName],
+	},
+	throw: true,
+});
+console.log(x6.download_urls);
+```

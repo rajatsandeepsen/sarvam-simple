@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { createMiddleware } from "hono/factory";
 import { getCollection, getKV, type JobCollection } from "@/sarvam/utils";
-import { audioJobSDK } from ".";
+import { audioJobSDK } from "./sdk";
 
 type AudioJobCollection = JobCollection;
 

@@ -1,0 +1,86 @@
+# Vision API
+
+Install Sarvam Vision API helpers and use them in serverless backends.
+
+## Install with shadcn CLI
+
+```bash
+bunx shadcn@latest add rajatsandeepsen/sarvam-simple/vision-api
+```
+
+## Environment Variable
+
+Get your key from [sarvam.ai](https://dashboard.sarvam.ai)
+
+```env
+SARVAM_API_KEY=your_api_key_here
+```
+
+## Usage
+
+```ts
+import { createSarvamVision, uploadSingleFile } from "./sarvam/vision/api";
+
+const sarvamVision = createSarvamVision(process.env.SARVAM_API_KEY!);
+
+// 1) Create a job
+const x1 = await sarvamVision("/v1", {
+	body: {
+		job_parameters: {
+			language: "en-IN",
+			output_format: "md", // html | md | json
+		},
+	},
+	throw: true,
+});
+
+const job_id = x1.job_id;
+
+// 2) Optional: check status
+const x2 = await sarvamVision("/v1/:job_id/status", {
+	params: { job_id },
+	throw: true,
+});
+console.log(x2.job_state);
+
+// 3) Request upload URL
+const filename = "simple.pdf";
+const x3 = await sarvamVision("/v1/upload-files", {
+	body: {
+		job_id,
+		files: [filename],
+	},
+	throw: true,
+});
+
+const uploadUrl = x3?.upload_urls[filename].file_url;
+if (!uploadUrl) throw new Error("Missing upload URL");
+
+// 4) Upload file bytes
+await uploadSingleFile({
+	uploadUrl,
+	file: pdfBytes, // Buffer | Uint8Array | Blob
+	filename,
+});
+
+// 5) Start job
+const x4 = await sarvamVision("/v1/:job_id/start", {
+	params: { job_id },
+	throw: true,
+});
+console.log(x4.job_state);
+
+// 6) Poll status
+const x5 = await sarvamVision("/v1/:job_id/status", {
+	params: { job_id },
+	throw: true,
+});
+console.log(x5.job_state);
+
+// 7) Request download URLs for outputs
+const x6 = await sarvamVision("/v1/:job_id/download-files", {
+	params: { job_id },
+	throw: true,
+});
+console.log(x6.download_urls);
+```

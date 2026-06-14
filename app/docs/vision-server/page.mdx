@@ -1,0 +1,79 @@
+# Vision Server
+
+Install a ready-to-use Hono server for Sarvam Vision batch processing.
+
+## Install
+
+```bash
+bunx shadcn@latest add rajatsandeepsen/sarvam-simple/vision-server
+```
+
+## Environment Variable
+
+Get your key from [sarvam.ai](https://dashboard.sarvam.ai)
+
+```env
+SARVAM_API_KEY=your_api_key_here
+```
+
+## Mount in your Hono app
+
+```ts
+import { Hono } from "hono";
+import simpleVisionServer from "./sarvam/vision/server";
+
+const app = new Hono();
+
+app.route("/vision", simpleVisionServer());
+
+export default app;
+```
+
+## Routes
+
+After mounting on `/vision`, available endpoints are:
+
+- `POST /vision/upload`
+- `POST /vision/:id/status`
+- `POST /vision/:id/download`
+
+## Usage
+
+### 1) Upload a file and create job
+
+```ts
+const form = new FormData();
+form.set("file", file); // File or multiple files with same key
+form.set("language", "en-IN");
+form.set("output_format", "md"); // html | md | json
+
+const uploadRes = await fetch("/vision/upload", {
+  method: "POST",
+  body: form,
+});
+
+const { id } = await uploadRes.json();
+```
+
+### 2) Check status
+
+```ts
+const statusRes = await fetch(`/vision/${id}/status`, {
+  method: "POST",
+});
+
+const status = await statusRes.json();
+console.log(status.job_state);
+```
+
+### 3) Get download URLs (when completed)
+
+```ts
+const downloadRes = await fetch(`/vision/${id}/download`, {
+  method: "POST",
+});
+
+const files = await downloadRes.json();
+
+console.log(files); // [{ filename, url }]
+```

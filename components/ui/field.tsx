@@ -201,7 +201,7 @@ function FieldError({
 			...new Map(errors.map((error) => [error?.message, error])).values(),
 		];
 
-		if (uniqueErrors?.length == 1) {
+		if (uniqueErrors?.length === 1) {
 			return uniqueErrors[0]?.message;
 		}
 
@@ -209,7 +209,7 @@ function FieldError({
 			<ul className="ml-4 flex list-disc flex-col gap-1">
 				{uniqueErrors.map(
 					(error, index) =>
-						error?.message && <li key={index}>{error.message}</li>,
+						error?.message && <li key={index as number}>{error.message}</li>,
 				)}
 			</ul>
 		);

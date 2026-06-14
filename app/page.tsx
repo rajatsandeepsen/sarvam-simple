@@ -230,8 +230,8 @@ export default function HomePage() {
 					...(email.trim() ? { email: email.trim() } : {}),
 					language_code: audioLanguageCode,
 					mode: audioMode,
-					with_timestamps: String(withTimestamps),
-					with_diarization: String(withDiarization),
+					with_timestamps: withTimestamps,
+					with_diarization: withDiarization,
 				},
 			});
 			return;

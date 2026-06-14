@@ -1,7 +1,7 @@
 import z from "zod";
 import { env } from "@/lib/env";
-import { visionJobSDK } from "@/sarvam/vision";
 import { createSarvamVision } from "@/sarvam/vision/api";
+import { visionJobSDK } from "@/sarvam/vision/sdk";
 import { publicProcedure } from "./procedure";
 
 export const appRouter = {
