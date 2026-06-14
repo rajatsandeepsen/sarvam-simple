@@ -33,8 +33,6 @@ app.get("/", (c) => {
 	return c.text("Hello");
 });
 
-app.route("/vision", visionServer);
-
 app.use(
 	createVar("waitUntil", (c) => {
 		return (p: Promise<unknown>) => {
@@ -43,6 +41,17 @@ app.use(
 			}
 			c.executionCtx.waitUntil(triedAsync(p, "Inside waitUntil"));
 		};
+	}),
+);
+
+app.use(createVar("kv", (c) => c.env.KEYVALUE));
+
+app.route(
+	"/vision",
+	visionServer({
+		webHook: true,
+		webSocket: true,
+		kvBinding: "KEYVALUE",
 	}),
 );
 

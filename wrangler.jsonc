@@ -20,5 +20,26 @@
 		"not_found_handling": "404-page",
 		"run_worker_first": ["/api/*"]
 	},
-	"send_metrics": false
+	"send_metrics": false,
+	"kv_namespaces": [
+		{
+			"binding": "KEYVALUE",
+			"id": "ab805c7cb1a24c93b65b8160acdd4086",
+			"preview_id": "ab805c7cb1a24c93b65b8160acdd4086"
+		}
+	]
+	// "migrations": [
+	// 	{
+	// 		"tag": "v1",
+	// 		"new_sqlite_classes": ["SarvamDurableSocket"]
+	// 	}
+	// ],
+	// "durable_objects": {
+	// 	"bindings": [
+	// 		{
+	// 			"name": "SARVAM_DURABLE_SOCKET",
+	// 			"class_name": "SarvamDurableSocket"
+	// 		}
+	// 	]
+	// }
 }

@@ -5,7 +5,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
 	pageExtensions: ["js", "jsx", "md", "mdx", "ts", "tsx"],
 	output: "export",
-	distDir: "out",
+	distDir: env.NODE_ENV === "development" ? "build" : "out",
 	trailingSlash: true,
 	images: { unoptimized: true },
 	turbopack: {
