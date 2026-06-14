@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { Loader2Icon, LoaderIcon, Upload, X } from "lucide-react";
+import { Loader2Icon, LoaderIcon, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { Container } from "@/components/container";
+import { FileUploadDropzoneContent } from "@/components/file-upload-dropzone-content";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -14,6 +15,12 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	Field,
+	FieldContent,
+	FieldGroup,
+	FieldLabel,
+} from "@/components/ui/field";
 import {
 	FileUpload,
 	FileUploadDropzone,
@@ -25,7 +32,7 @@ import {
 	FileUploadTrigger,
 } from "@/components/ui/file-upload";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import {
 	Select,
 	SelectContent,
@@ -36,12 +43,16 @@ import {
 import { visionAPI } from "@/hooks/api";
 import { MutationRenderer } from "@/hooks/mutation";
 import { truncateText } from "@/lib/utils";
+import {
+	documentIntelligenceLanguageSchema,
+	outputFormatSchema,
+} from "@/sarvam/vision/api";
 
 const VISION_ACCEPT =
 	".pdf,.png,.jpg,.jpeg,.zip,application/pdf,image/png,image/jpeg,application/zip";
 
-const VISION_LANGUAGE_OPTIONS = ["en-IN", "hi-IN", "ta-IN", "te-IN"] as const;
-const VISION_OUTPUT_FORMAT_OPTIONS = ["md", "html", "json"] as const;
+const VISION_LANGUAGE_OPTIONS = documentIntelligenceLanguageSchema.options;
+const VISION_OUTPUT_FORMAT_OPTIONS = outputFormatSchema.options;
 
 export default function Home() {
 	return (
@@ -60,10 +71,8 @@ export function FileUploadComponent() {
 	const router = useRouter();
 	const [files, setFiles] = useState<File[]>([]);
 	const [email, setEmail] = useState("");
-	const [language, setLanguage] =
-		useState<(typeof VISION_LANGUAGE_OPTIONS)[number]>("en-IN");
-	const [outputFormat, setOutputFormat] =
-		useState<(typeof VISION_OUTPUT_FORMAT_OPTIONS)[number]>("md");
+	const [language, setLanguage] = useState<string>("en-IN");
+	const [outputFormat, setOutputFormat] = useState<string>("md");
 
 	const mutation = useMutation(
 		(
@@ -97,77 +106,80 @@ export function FileUploadComponent() {
 					<>
 						<CardContent className="space-y-3">
 							<FileUploadDropzone>
-								<div className="flex flex-col items-center gap-1 text-center">
-									<div className="flex items-center justify-center rounded-full border p-2.5">
-										<Upload className="size-6 text-muted-foreground" />
-									</div>
-									<p className="font-medium text-sm">Drag & drop files here</p>
-									<p className="text-muted-foreground text-xs">
-										Or click to browse (PDF, PNG, JPG, JPEG, ZIP · max 2 files,
-										up to 5MB each)
-									</p>
-								</div>
-								<FileUploadTrigger asChild>
-									<Button variant="outline" size="sm" className="mt-2 w-fit">
-										Browse files
-									</Button>
-								</FileUploadTrigger>
+								<FileUploadDropzoneContent
+									title="Drag & drop files here"
+									description="Or click to browse (PDF, PNG, JPG, JPEG, ZIP)"
+									subtitle="max 2 files, up to 5MB each"
+								>
+									<FileUploadTrigger asChild>
+										<Button variant="outline" size="sm" className="mt-2 w-fit">
+											Browse files
+										</Button>
+									</FileUploadTrigger>
+								</FileUploadDropzoneContent>
 							</FileUploadDropzone>
 							{files.length > 0 && (
 								<>
-									<Input
-										type="email"
-										value={email}
-										onChange={(e) => setEmail(e.target.value)}
-										placeholder="Email (optional)"
-									/>
+									<Field>
+										<FieldLabel>Email for notifications (optional)</FieldLabel>
+										<Input
+											type="email"
+											value={email}
+											onChange={(e) => setEmail(e.target.value)}
+											placeholder="name@example.com"
+										/>
+									</Field>
 
-									<div className="grid gap-3 md:grid-cols-2">
-										<div className="space-y-2">
-											<Label>Language</Label>
-											<Select
-												value={language}
-												onValueChange={(value) =>
-													setLanguage(
-														value as (typeof VISION_LANGUAGE_OPTIONS)[number],
-													)
-												}
-											>
-												<SelectTrigger className="w-full">
-													<SelectValue placeholder="Select language" />
-												</SelectTrigger>
-												<SelectContent>
-													{VISION_LANGUAGE_OPTIONS.map((option) => (
-														<SelectItem key={option} value={option}>
-															{option}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-										</div>
-										<div className="space-y-2">
-											<Label>Output format</Label>
-											<Select
-												value={outputFormat}
-												onValueChange={(value) =>
-													setOutputFormat(
-														value as (typeof VISION_OUTPUT_FORMAT_OPTIONS)[number],
-													)
-												}
-											>
-												<SelectTrigger className="w-full">
-													<SelectValue placeholder="Select output format" />
-												</SelectTrigger>
-												<SelectContent>
-													{VISION_OUTPUT_FORMAT_OPTIONS.map((option) => (
-														<SelectItem key={option} value={option}>
-															{option}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-										</div>
-									</div>
+									<FieldGroup className="grid gap-3 md:grid-cols-2">
+										<Field>
+											<FieldLabel>Language</FieldLabel>
+											<FieldContent>
+												<Select
+													value={language}
+													onValueChange={(value) =>
+														setLanguage(
+															value as (typeof VISION_LANGUAGE_OPTIONS)[number],
+														)
+													}
+												>
+													<SelectTrigger className="w-full">
+														<SelectValue placeholder="Select language" />
+													</SelectTrigger>
+													<SelectContent>
+														{VISION_LANGUAGE_OPTIONS.map((option) => (
+															<SelectItem key={option} value={option}>
+																{option}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+											</FieldContent>
+										</Field>
+										<Field>
+											<FieldLabel>Output format</FieldLabel>
+											<FieldContent>
+												<Select
+													value={outputFormat}
+													onValueChange={(value) =>
+														setOutputFormat(
+															value as (typeof VISION_OUTPUT_FORMAT_OPTIONS)[number],
+														)
+													}
+												>
+													<SelectTrigger className="w-full">
+														<SelectValue placeholder="Select output format" />
+													</SelectTrigger>
+													<SelectContent>
+														{VISION_OUTPUT_FORMAT_OPTIONS.map((option) => (
+															<SelectItem key={option} value={option}>
+																{option}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+											</FieldContent>
+										</Field>
+									</FieldGroup>
 								</>
 							)}
 							<FileUploadList>

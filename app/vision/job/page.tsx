@@ -17,6 +17,12 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import {
+	Field,
+	FieldContent,
+	FieldGroup,
+	FieldLabel,
+} from "@/components/ui/field";
+import {
 	FileUploadItemMetadataRaw,
 	FileUploadItemRaw,
 	FileUploadListRaw,
@@ -234,13 +240,20 @@ function EmailStepContent({ id }: { id: string }) {
 
 	return (
 		<CardContent>
-			<Input
-				type="email"
-				value={email}
-				onChange={(event) => setEmail(event.target.value)}
-				placeholder="you@example.com"
-				required
-			/>
+			<FieldGroup>
+				<Field>
+					<FieldLabel>Email for notifications</FieldLabel>
+					<FieldContent>
+						<Input
+							type="email"
+							value={email}
+							onChange={(event) => setEmail(event.target.value)}
+							placeholder="you@example.com"
+							required
+						/>
+					</FieldContent>
+				</Field>
+			</FieldGroup>
 			<MutationButton
 				api={visionAPI[":id"].email.$post.mutationOptions()}
 				mutate={(mutate) => (

@@ -16,7 +16,7 @@ import {
 import * as React from "react";
 import { useAsRef } from "@/hooks/use-as-ref";
 import { useLazyRef } from "@/hooks/use-lazy-ref";
-import { cn } from "@/lib/utils";
+import { cn, truncateText } from "@/lib/utils";
 
 const ROOT_NAME = "FileUpload";
 const DROPZONE_NAME = "FileUploadDropzone";
@@ -1217,7 +1217,7 @@ function FileUploadItemMetadata(props: FileUploadItemMetadataProps) {
 							size === "sm" && "font-normal text-[13px] leading-snug",
 						)}
 					>
-						{itemContext.fileState.file.name}
+						{truncateText(itemContext.fileState.file.name, 30)}
 					</span>
 					<span
 						id={itemContext.sizeId}

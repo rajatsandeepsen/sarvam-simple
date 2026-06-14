@@ -1,12 +1,13 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { Loader2Icon, LoaderIcon, Upload, X } from "lucide-react";
+import { Loader2Icon, LoaderIcon, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Container } from "@/components/container";
+import { FileUploadDropzoneContent } from "@/components/file-upload-dropzone-content";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -18,6 +19,12 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+	Field,
+	FieldContent,
+	FieldGroup,
+	FieldLabel,
+} from "@/components/ui/field";
+import {
 	FileUpload,
 	FileUploadDropzone,
 	FileUploadItem,
@@ -28,7 +35,7 @@ import {
 	FileUploadTrigger,
 } from "@/components/ui/file-upload";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import {
 	Select,
 	SelectContent,
@@ -38,6 +45,14 @@ import {
 } from "@/components/ui/select";
 import { audioAPI, visionAPI } from "@/hooks/api";
 import { truncateText } from "@/lib/utils";
+import {
+	speechToTextLanguageSchema,
+	speechToTextModeSchema,
+} from "@/sarvam/audio/api";
+import {
+	documentIntelligenceLanguageSchema,
+	outputFormatSchema,
+} from "@/sarvam/vision/api";
 
 const VISION_ACCEPT =
 	".pdf,.png,.jpg,.jpeg,.zip,application/pdf,image/png,image/jpeg,application/zip";
@@ -47,16 +62,21 @@ const AUDIO_ACCEPT =
 
 const SMART_ACCEPT = `${VISION_ACCEPT},${AUDIO_ACCEPT}`;
 
-const AUDIO_LANGUAGE_OPTIONS = ["en-IN", "hi-IN", "ta-IN", "te-IN"] as const;
-const AUDIO_MODE_OPTIONS = [
-	"transcribe",
-	"translate",
-	"verbatim",
-	"translit",
-	"codemix",
-] as const;
-const VISION_LANGUAGE_OPTIONS = ["en-IN", "hi-IN", "ta-IN", "te-IN"] as const;
-const VISION_OUTPUT_FORMAT_OPTIONS = ["md", "html", "json"] as const;
+type AudioLanguageOption = Exclude<
+	(typeof speechToTextLanguageSchema)["options"][number],
+	"unknown"
+>;
+type AudioModeOption = (typeof speechToTextModeSchema)["options"][number];
+type VisionLanguageOption =
+	(typeof documentIntelligenceLanguageSchema)["options"][number];
+type VisionOutputFormatOption = (typeof outputFormatSchema)["options"][number];
+
+const AUDIO_LANGUAGE_OPTIONS = speechToTextLanguageSchema.options.filter(
+	(option): option is AudioLanguageOption => option !== "unknown",
+);
+const AUDIO_MODE_OPTIONS = speechToTextModeSchema.options;
+const VISION_LANGUAGE_OPTIONS = documentIntelligenceLanguageSchema.options;
+const VISION_OUTPUT_FORMAT_OPTIONS = outputFormatSchema.options;
 
 type InputMode = "audio" | "vision" | null;
 
@@ -102,15 +122,14 @@ export default function HomePage() {
 	const [files, setFiles] = useState<File[]>([]);
 	const [email, setEmail] = useState("");
 	const [audioLanguageCode, setAudioLanguageCode] =
-		useState<(typeof AUDIO_LANGUAGE_OPTIONS)[number]>("en-IN");
-	const [audioMode, setAudioMode] =
-		useState<(typeof AUDIO_MODE_OPTIONS)[number]>("transcribe");
+		useState<AudioLanguageOption>("en-IN");
+	const [audioMode, setAudioMode] = useState<AudioModeOption>("transcribe");
 	const [withTimestamps, setWithTimestamps] = useState(false);
 	const [withDiarization, setWithDiarization] = useState(false);
 	const [visionLanguage, setVisionLanguage] =
-		useState<(typeof VISION_LANGUAGE_OPTIONS)[number]>("en-IN");
+		useState<VisionLanguageOption>("en-IN");
 	const [visionOutputFormat, setVisionOutputFormat] =
-		useState<(typeof VISION_OUTPUT_FORMAT_OPTIONS)[number]>("md");
+		useState<VisionOutputFormatOption>("md");
 
 	const audioMutation = useMutation(
 		audioAPI.upload.$post.mutationOptions({
@@ -265,48 +284,128 @@ export default function HomePage() {
 				>
 					<CardContent className="space-y-3">
 						<FileUploadDropzone>
-							<div className="flex flex-col items-center gap-1 text-center">
-								<div className="flex items-center justify-center rounded-full border p-2.5">
-									<Upload className="size-6 text-muted-foreground" />
-								</div>
-								<p className="font-medium text-sm">Drag & drop files here</p>
-								<p className="text-muted-foreground text-xs">
-									max 2 files, up to 5MB each
-								</p>
-								<p className="text-muted-foreground text-xs">
-									{activeMode === "audio"
+							<FileUploadDropzoneContent
+								title="Drag & drop files here"
+								description="max 2 files, up to 5MB each"
+								subtitle={
+									activeMode === "audio"
 										? "Locked to audio files (clear to switch)"
 										: activeMode === "vision"
 											? "Locked to vision files (clear to switch)"
-											: "supports both audio & vision files"}
-								</p>
-							</div>
-							<FileUploadTrigger asChild>
-								<Button variant="outline" size="sm" className="mt-2 w-fit">
-									Browse files
-								</Button>
-							</FileUploadTrigger>
+											: "supports both audio & vision files"
+								}
+							>
+								<FileUploadTrigger asChild>
+									<Button variant="outline" size="sm" className="mt-2 w-fit">
+										Browse files
+									</Button>
+								</FileUploadTrigger>
+							</FileUploadDropzoneContent>
 						</FileUploadDropzone>
 
 						{files.length > 0 && (
-							<Input
-								type="email"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
-								placeholder="Email (optional)"
-							/>
+							<Field>
+								<FieldLabel>Email for notifications (optional)</FieldLabel>
+								<Input
+									type="email"
+									value={email}
+									onChange={(e) => setEmail(e.target.value)}
+									placeholder="name@example.com"
+								/>
+							</Field>
 						)}
 
 						{files.length > 0 && activeMode !== "vision" && (
 							<>
-								<div className="grid gap-3 md:grid-cols-2">
-									<div className="space-y-2">
-										<Label>Audio language</Label>
+								<FieldGroup className="grid gap-3 md:grid-cols-2">
+									<Field>
+										<FieldLabel>Language</FieldLabel>
+										<FieldContent>
+											<Select
+												value={audioLanguageCode}
+												onValueChange={(value) =>
+													setAudioLanguageCode(
+														value as (typeof AUDIO_LANGUAGE_OPTIONS)[number],
+													)
+												}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder="Select language" />
+												</SelectTrigger>
+												<SelectContent>
+													{AUDIO_LANGUAGE_OPTIONS.map((option) => (
+														<SelectItem key={option} value={option}>
+															{option}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</FieldContent>
+									</Field>
+									<Field>
+										<FieldLabel>Mode</FieldLabel>
+										<FieldContent>
+											<Select
+												value={audioMode}
+												onValueChange={(value) =>
+													setAudioMode(
+														value as (typeof AUDIO_MODE_OPTIONS)[number],
+													)
+												}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder="Select mode" />
+												</SelectTrigger>
+												<SelectContent>
+													{AUDIO_MODE_OPTIONS.map((option) => (
+														<SelectItem key={option} value={option}>
+															{option}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</FieldContent>
+									</Field>
+								</FieldGroup>
+								<FieldGroup>
+									<Field orientation="horizontal">
+										<Checkbox
+											id="home-audio-with-timestamps"
+											checked={withTimestamps}
+											onCheckedChange={(checked) =>
+												setWithTimestamps(checked === true)
+											}
+										/>
+										<FieldLabel htmlFor="home-audio-with-timestamps">
+											With timestamps
+										</FieldLabel>
+									</Field>
+									<Field orientation="horizontal">
+										<Checkbox
+											id="home-audio-with-diarization"
+											checked={withDiarization}
+											onCheckedChange={(checked) =>
+												setWithDiarization(checked === true)
+											}
+										/>
+										<FieldLabel htmlFor="home-audio-with-diarization">
+											With diarization
+										</FieldLabel>
+									</Field>
+								</FieldGroup>
+							</>
+						)}
+
+						{files.length > 0 && activeMode !== "audio" && (
+							<FieldGroup className="grid gap-3 md:grid-cols-2">
+								<Field>
+									<FieldLabel>Language</FieldLabel>
+									<FieldContent>
 										<Select
-											value={audioLanguageCode}
+											value={visionLanguage}
 											onValueChange={(value) =>
-												setAudioLanguageCode(
-													value as (typeof AUDIO_LANGUAGE_OPTIONS)[number],
+												setVisionLanguage(
+													value as (typeof VISION_LANGUAGE_OPTIONS)[number],
 												)
 											}
 										>
@@ -314,107 +413,40 @@ export default function HomePage() {
 												<SelectValue placeholder="Select language" />
 											</SelectTrigger>
 											<SelectContent>
-												{AUDIO_LANGUAGE_OPTIONS.map((option) => (
+												{VISION_LANGUAGE_OPTIONS.map((option) => (
 													<SelectItem key={option} value={option}>
 														{option}
 													</SelectItem>
 												))}
 											</SelectContent>
 										</Select>
-									</div>
-									<div className="space-y-2">
-										<Label>Audio mode</Label>
+									</FieldContent>
+								</Field>
+								<Field>
+									<FieldLabel>Output format</FieldLabel>
+									<FieldContent>
 										<Select
-											value={audioMode}
+											value={visionOutputFormat}
 											onValueChange={(value) =>
-												setAudioMode(
-													value as (typeof AUDIO_MODE_OPTIONS)[number],
+												setVisionOutputFormat(
+													value as (typeof VISION_OUTPUT_FORMAT_OPTIONS)[number],
 												)
 											}
 										>
 											<SelectTrigger className="w-full">
-												<SelectValue placeholder="Select mode" />
+												<SelectValue placeholder="Select output format" />
 											</SelectTrigger>
 											<SelectContent>
-												{AUDIO_MODE_OPTIONS.map((option) => (
+												{VISION_OUTPUT_FORMAT_OPTIONS.map((option) => (
 													<SelectItem key={option} value={option}>
 														{option}
 													</SelectItem>
 												))}
 											</SelectContent>
 										</Select>
-									</div>
-								</div>
-								<div className="flex flex-col gap-2">
-									<Label className="flex items-center gap-2 font-normal">
-										<Checkbox
-											checked={withTimestamps}
-											onCheckedChange={(checked) =>
-												setWithTimestamps(checked === true)
-											}
-										/>
-										With timestamps
-									</Label>
-									<Label className="flex items-center gap-2 font-normal">
-										<Checkbox
-											checked={withDiarization}
-											onCheckedChange={(checked) =>
-												setWithDiarization(checked === true)
-											}
-										/>
-										With diarization
-									</Label>
-								</div>
-							</>
-						)}
-
-						{files.length > 0 && activeMode !== "audio" && (
-							<div className="grid gap-3 md:grid-cols-2">
-								<div className="space-y-2">
-									<Label>Vision language</Label>
-									<Select
-										value={visionLanguage}
-										onValueChange={(value) =>
-											setVisionLanguage(
-												value as (typeof VISION_LANGUAGE_OPTIONS)[number],
-											)
-										}
-									>
-										<SelectTrigger className="w-full">
-											<SelectValue placeholder="Select language" />
-										</SelectTrigger>
-										<SelectContent>
-											{VISION_LANGUAGE_OPTIONS.map((option) => (
-												<SelectItem key={option} value={option}>
-													{option}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
-								<div className="space-y-2">
-									<Label>Vision output format</Label>
-									<Select
-										value={visionOutputFormat}
-										onValueChange={(value) =>
-											setVisionOutputFormat(
-												value as (typeof VISION_OUTPUT_FORMAT_OPTIONS)[number],
-											)
-										}
-									>
-										<SelectTrigger className="w-full">
-											<SelectValue placeholder="Select output format" />
-										</SelectTrigger>
-										<SelectContent>
-											{VISION_OUTPUT_FORMAT_OPTIONS.map((option) => (
-												<SelectItem key={option} value={option}>
-													{option}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								</div>
-							</div>
+									</FieldContent>
+								</Field>
+							</FieldGroup>
 						)}
 
 						<FileUploadList>
@@ -453,9 +485,9 @@ export default function HomePage() {
 							{isUploading
 								? "Creating Job"
 								: activeMode === "audio"
-									? "Upload as Audio"
+									? "Upload Audio Files and Start Processing"
 									: activeMode === "vision"
-										? "Upload as Vision"
+										? "Upload Vision Files and Start Processing"
 										: "Upload and Start Processing"}
 						</Button>
 					</CardFooter>

@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { Loader2Icon, LoaderIcon, Upload, X } from "lucide-react";
+import { Loader2Icon, LoaderIcon, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { Container } from "@/components/container";
+import { FileUploadDropzoneContent } from "@/components/file-upload-dropzone-content";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -15,6 +16,12 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+	Field,
+	FieldContent,
+	FieldGroup,
+	FieldLabel,
+} from "@/components/ui/field";
 import {
 	FileUpload,
 	FileUploadDropzone,
@@ -26,7 +33,7 @@ import {
 	FileUploadTrigger,
 } from "@/components/ui/file-upload";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import {
 	Select,
 	SelectContent,
@@ -37,18 +44,18 @@ import {
 import { audioAPI } from "@/hooks/api";
 import { MutationRenderer } from "@/hooks/mutation";
 import { truncateText } from "@/lib/utils";
+import {
+	speechToTextLanguageSchema,
+	speechToTextModeSchema,
+} from "@/sarvam/audio/api";
 
 const AUDIO_ACCEPT =
 	".wav,.mp3,.m4a,.aac,.ogg,.opus,.flac,.webm,.amr,audio/wav,audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/opus,audio/flac,audio/webm,audio/amr";
 
-const AUDIO_LANGUAGE_OPTIONS = ["en-IN", "hi-IN", "ta-IN", "te-IN"] as const;
-const AUDIO_MODE_OPTIONS = [
-	"transcribe",
-	"translate",
-	"verbatim",
-	"translit",
-	"codemix",
-] as const;
+const AUDIO_LANGUAGE_OPTIONS = speechToTextLanguageSchema.options.filter(
+	(option) => option !== "unknown",
+);
+const AUDIO_MODE_OPTIONS = speechToTextModeSchema.options;
 
 export default function Home() {
 	return (
@@ -67,10 +74,8 @@ export function FileUploadComponent() {
 	const router = useRouter();
 	const [files, setFiles] = useState<File[]>([]);
 	const [email, setEmail] = useState("");
-	const [languageCode, setLanguageCode] =
-		useState<(typeof AUDIO_LANGUAGE_OPTIONS)[number]>("en-IN");
-	const [mode, setMode] =
-		useState<(typeof AUDIO_MODE_OPTIONS)[number]>("transcribe");
+	const [languageCode, setLanguageCode] = useState<string>("en-IN");
+	const [mode, setMode] = useState<string>("transcribe");
 	const [withTimestamps, setWithTimestamps] = useState(false);
 	const [withDiarization, setWithDiarization] = useState(false);
 
@@ -106,94 +111,107 @@ export function FileUploadComponent() {
 					<>
 						<CardContent className="space-y-3">
 							<FileUploadDropzone>
-								<div className="flex flex-col items-center gap-1 text-center">
-									<div className="flex items-center justify-center rounded-full border p-2.5">
-										<Upload className="size-6 text-muted-foreground" />
-									</div>
-									<p className="font-medium text-sm">Drag & drop files here</p>
-									<p className="text-muted-foreground text-xs">
-										Or click to browse (WAV, MP3, M4A, AAC, OGG, OPUS, FLAC,
-										WEBM, AMR · max 2 files, up to 5MB each)
-									</p>
-								</div>
-								<FileUploadTrigger asChild>
-									<Button variant="outline" size="sm" className="mt-2 w-fit">
-										Browse files
-									</Button>
-								</FileUploadTrigger>
+								<FileUploadDropzoneContent
+									title="Drag & drop files here"
+									description="Or click to browse (WAV, MP3, M4A, AAC, OGG, OPUS, FLAC, WEBM, AMR)"
+									subtitle="max 2 files, up to 5MB each"
+								>
+									<FileUploadTrigger asChild>
+										<Button variant="outline" size="sm" className="mt-2 w-fit">
+											Browse files
+										</Button>
+									</FileUploadTrigger>
+								</FileUploadDropzoneContent>
 							</FileUploadDropzone>
 							{files.length > 0 && (
 								<>
-									<Input
-										type="email"
-										value={email}
-										onChange={(e) => setEmail(e.target.value)}
-										placeholder="Email (optional)"
-									/>
-									<div className="grid gap-3 md:grid-cols-2">
-										<div className="space-y-2">
-											<Label>Language</Label>
-											<Select
-												value={languageCode}
-												onValueChange={(value) =>
-													setLanguageCode(
-														value as (typeof AUDIO_LANGUAGE_OPTIONS)[number],
-													)
-												}
-											>
-												<SelectTrigger className="w-full">
-													<SelectValue placeholder="Select language" />
-												</SelectTrigger>
-												<SelectContent>
-													{AUDIO_LANGUAGE_OPTIONS.map((option) => (
-														<SelectItem key={option} value={option}>
-															{option}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-										</div>
-										<div className="space-y-2">
-											<Label>Mode</Label>
-											<Select
-												value={mode}
-												onValueChange={(value) =>
-													setMode(value as (typeof AUDIO_MODE_OPTIONS)[number])
-												}
-											>
-												<SelectTrigger className="w-full">
-													<SelectValue placeholder="Select mode" />
-												</SelectTrigger>
-												<SelectContent>
-													{AUDIO_MODE_OPTIONS.map((option) => (
-														<SelectItem key={option} value={option}>
-															{option}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-										</div>
-									</div>
-									<div className="flex flex-col gap-2">
-										<Label className="flex items-center gap-2 font-normal">
+									<Field>
+										<FieldLabel>Email for notifications (optional)</FieldLabel>
+										<FieldContent>
+											<Input
+												type="email"
+												value={email}
+												onChange={(e) => setEmail(e.target.value)}
+												placeholder="name@example.com"
+											/>
+										</FieldContent>
+									</Field>
+									<FieldGroup className="grid gap-3 md:grid-cols-2">
+										<Field>
+											<FieldLabel>Language</FieldLabel>
+											<FieldContent>
+												<Select
+													value={languageCode}
+													onValueChange={(value) =>
+														setLanguageCode(
+															value as (typeof AUDIO_LANGUAGE_OPTIONS)[number],
+														)
+													}
+												>
+													<SelectTrigger className="w-full">
+														<SelectValue placeholder="Select language" />
+													</SelectTrigger>
+													<SelectContent>
+														{AUDIO_LANGUAGE_OPTIONS.map((option) => (
+															<SelectItem key={option} value={option}>
+																{option}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+											</FieldContent>
+										</Field>
+										<Field>
+											<FieldLabel>Mode</FieldLabel>
+											<FieldContent>
+												<Select
+													value={mode}
+													onValueChange={(value) =>
+														setMode(
+															value as (typeof AUDIO_MODE_OPTIONS)[number],
+														)
+													}
+												>
+													<SelectTrigger className="w-full">
+														<SelectValue placeholder="Select mode" />
+													</SelectTrigger>
+													<SelectContent>
+														{AUDIO_MODE_OPTIONS.map((option) => (
+															<SelectItem key={option} value={option}>
+																{option}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+											</FieldContent>
+										</Field>
+									</FieldGroup>
+									<FieldGroup>
+										<Field orientation="horizontal">
 											<Checkbox
+												id="audio-with-timestamps"
 												checked={withTimestamps}
 												onCheckedChange={(checked) =>
 													setWithTimestamps(checked === true)
 												}
 											/>
-											With timestamps
-										</Label>
-										<Label className="flex items-center gap-2 font-normal">
+											<FieldLabel htmlFor="audio-with-timestamps">
+												With timestamps
+											</FieldLabel>
+										</Field>
+										<Field orientation="horizontal">
 											<Checkbox
+												id="audio-with-diarization"
 												checked={withDiarization}
 												onCheckedChange={(checked) =>
 													setWithDiarization(checked === true)
 												}
 											/>
-											With diarization
-										</Label>
-									</div>
+											<FieldLabel htmlFor="audio-with-diarization">
+												With diarization
+											</FieldLabel>
+										</Field>
+									</FieldGroup>
 								</>
 							)}
 							<FileUploadList>
