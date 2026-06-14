@@ -7,6 +7,7 @@ import { env } from "env";
 import { hc } from "hono/client";
 import { HonoReactQuery } from "hono-tanstack-query";
 import { toast } from "sonner";
+import type { AudioServerType } from "@/sarvam/audio/server";
 import type { VisionServerType } from "@/sarvam/vision/server";
 import type { AppRouter } from "@/server/api";
 
@@ -47,6 +48,15 @@ export const api = createTanstackQueryUtils(client);
 
 export const visionAPI = HonoReactQuery(
 	hc<VisionServerType>(`${baseUrl}/api/vision`, {
+		init: {
+			credentials: "include",
+		},
+	}),
+	{ queryClient },
+);
+
+export const audioAPI = HonoReactQuery(
+	hc<AudioServerType>(`${baseUrl}/api/audio`, {
 		init: {
 			credentials: "include",
 		},

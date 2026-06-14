@@ -1297,6 +1297,7 @@ function FileUploadItemProgress(props: FileUploadItemProgressProps) {
 						fill="none"
 						stroke="currentColor"
 					>
+						<title>Progress Bar</title>
 						<circle
 							className="text-primary/20"
 							strokeWidth="2"

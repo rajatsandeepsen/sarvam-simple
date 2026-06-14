@@ -183,7 +183,7 @@ function Page({ id }: { id: string }) {
 										Your job is created, but no file has been uploaded yet.
 									</CardDescription>
 									<Button asChild>
-										<Link href={`/vision?job_id=${id}`}>Go to upload</Link>
+										<Link href={`/vision?id=${id}`}>Go to upload</Link>
 									</Button>
 								</CardHeader>
 							</Card>

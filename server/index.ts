@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { triedAsync } from "@/lib/tools";
+import audioServer from "@/sarvam/audio/server";
 import visionServer from "@/sarvam/vision/server";
 import { appRouter } from "@/server/api";
 import { createContext, createVar } from "@/server/context";
@@ -50,6 +51,26 @@ app.use(createVar("kv", (c) => c.env.KEYVALUE));
 app.route(
 	"/vision",
 	visionServer({
+		webHook: true,
+		webSocket: true,
+		kvBinding: "KEYVALUE",
+		sendEmail: async (email, data) => {
+			sendEmail({
+				from: "<Simple Sarvam> dev@manolo.in",
+				to: email,
+				text: [
+					`Click on the link to start downloading`,
+					...data.map((file) => `${file.filename}: ${file.url}`),
+				].join("\n"),
+				subject: "Your files are ready to download -  Simple Sarvam",
+			});
+		},
+	}),
+);
+
+app.route(
+	"/audio",
+	audioServer({
 		webHook: true,
 		webSocket: true,
 		kvBinding: "KEYVALUE",

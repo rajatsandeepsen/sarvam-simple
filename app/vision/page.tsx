@@ -28,6 +28,9 @@ import { visionAPI } from "@/hooks/api";
 import { MutationRenderer } from "@/hooks/mutation";
 import { truncateText } from "@/lib/utils";
 
+const VISION_ACCEPT =
+	".pdf,.png,.jpg,.jpeg,.zip,application/pdf,image/png,image/jpeg,application/zip";
+
 export default function Home() {
 	return (
 		<Container>
@@ -41,14 +44,14 @@ export default function Home() {
 	);
 }
 export function FileUploadComponent() {
-	const job_id = useSearchParams().get("job_id");
+	const id = useSearchParams().get("id");
 	const router = useRouter();
 	const [files, setFiles] = useState<File[]>([]);
 
 	const mutation = useMutation(
-		(job_id ? visionAPI[":id"] : visionAPI).upload.$post.mutationOptions({
+		(id ? visionAPI[":id"] : visionAPI).upload.$post.mutationOptions({
 			async onSuccess(data) {
-				router.push(`/vision/job?id=${data.job_id}`);
+				router.push(`/vision/job?id=${data.id}`);
 			},
 		}),
 	);
@@ -61,6 +64,7 @@ export function FileUploadComponent() {
 
 	return (
 		<FileUpload
+			accept={VISION_ACCEPT}
 			maxFiles={2}
 			maxSize={5 * 1024 * 1024}
 			value={files}
@@ -80,7 +84,8 @@ export function FileUploadComponent() {
 									</div>
 									<p className="font-medium text-sm">Drag & drop files here</p>
 									<p className="text-muted-foreground text-xs">
-										Or click to browse (max 2 files, up to 5MB each)
+										Or click to browse (PDF, PNG, JPG, JPEG, ZIP · max 2 files,
+										up to 5MB each)
 									</p>
 								</div>
 								<FileUploadTrigger asChild>
@@ -115,7 +120,7 @@ export function FileUploadComponent() {
 								disabled={files.length === 0}
 								onClick={() => {
 									mutate({
-										param: { id: job_id ?? "" },
+										param: { id: id ?? "" },
 										form: {
 											file: files,
 										},
