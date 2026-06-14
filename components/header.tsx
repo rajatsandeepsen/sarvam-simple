@@ -1,4 +1,9 @@
-import { AudioLinesIcon, EyeIcon, HouseIcon, SparklesIcon } from "lucide-react";
+import {
+	AudioLinesIcon,
+	BookOpenTextIcon,
+	EyeIcon,
+	HouseIcon,
+} from "lucide-react";
 
 import Logo from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -19,15 +24,14 @@ const navigationLinks = [
 	{ href: "/", icon: HouseIcon, label: "Home" },
 	{ href: "/vision", icon: EyeIcon, label: "Vision" },
 	{ href: "/audio", icon: AudioLinesIcon, label: "Audio" },
+	// { href: "/docs", icon: BookOpenTextIcon, label: "Docs" },
 ];
 
 export default function Header() {
 	return (
 		<header className="border-b px-4 md:px-6">
 			<div className="flex h-16 items-center justify-between gap-4">
-				{/* Left side */}
 				<div className="flex flex-1 items-center gap-2">
-					{/* Mobile menu trigger */}
 					<Popover>
 						<PopoverTrigger asChild>
 							<Button
