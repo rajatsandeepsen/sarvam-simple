@@ -10,9 +10,6 @@ export const env = createEnv({
 		CORS_ORIGIN: z.string().url().optional(),
 		SARVAM_API_KEY: z.string(),
 
-		NODEMAILER_EMAIL: z.string().email(),
-		NODEMAILER_PASS: z.string(),
-
 		NODE_ENV: z
 			.enum(["development", "test", "production"])
 			.default("development"),
@@ -36,12 +33,9 @@ export const env = createEnv({
 
 		SARVAM_API_KEY: process.env.SARVAM_API_KEY,
 
-		NODEMAILER_EMAIL: process.env.NODEMAILER_EMAIL,
-		NODEMAILER_PASS: process.env.NODEMAILER_PASS,
-
 		NEXT_PUBLIC_SERVER_URL: process.env.NEXT_PUBLIC_SERVER_URL,
 
-		NODE_ENV: process.env.NODE_ENV
+		NODE_ENV: process.env.NODE_ENV,
 	},
 	/**
 	 * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

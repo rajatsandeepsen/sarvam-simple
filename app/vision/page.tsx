@@ -119,7 +119,7 @@ export function FileUploadComponent() {
 										form: {
 											file: files,
 										},
-									} as { param: { id: string } });
+									});
 								}}
 							>
 								Upload and Start Processing

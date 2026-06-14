@@ -33,6 +33,7 @@ import {
 	StepperTrigger,
 } from "@/components/ui/stepper";
 import { visionAPI } from "@/hooks/api";
+import { MutationButton } from "@/hooks/mutation";
 import { SwitchFunc } from "@/lib/utils";
 
 export default function VisionJobPage() {
@@ -240,10 +241,35 @@ function EmailStepContent({ id }: { id: string }) {
 				placeholder="you@example.com"
 				required
 			/>
-			<Button>
-				<MailIcon />
-				Save email
-			</Button>
+			<MutationButton
+				api={visionAPI[":id"].email.$post.mutationOptions()}
+				mutate={(mutate) => (
+					<Button
+						variant="outline"
+						onClick={() =>
+							mutate({
+								param: { id },
+								json: { email },
+							})
+						}
+					>
+						<MailIcon />
+						Save email
+					</Button>
+				)}
+				isPending={
+					<Button>
+						<Loader2Icon className="animate-spin" />
+						Saving
+					</Button>
+				}
+				isSuccess={
+					<Button>
+						<MailIcon />
+						Email Saved
+					</Button>
+				}
+			/>
 		</CardContent>
 	);
 }

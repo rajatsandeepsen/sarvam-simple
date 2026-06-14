@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Container } from "./container";
 
-export const components: MDXComponents = {
+export const useMDXComponents = (): MDXComponents => ({
 	wrapper: ({ children }: React.ComponentProps<"div">) => (
 		<Container className="markdown lg:w-lg xl:w-xl 2xl:w-2xl">
 			<div className="my-4 gap-5">{children}</div>
@@ -200,4 +200,4 @@ export const components: MDXComponents = {
 			<Link {...props} />
 		</Button>
 	),
-};
+});

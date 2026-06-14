@@ -7,6 +7,7 @@ import { triedAsync } from "@/lib/tools";
 import visionServer from "@/sarvam/vision/server";
 import { appRouter } from "@/server/api";
 import { createContext, createVar } from "@/server/context";
+import { sendEmail } from "./context/email";
 import type { HonoType } from "./context/types";
 import cron from "./cron";
 
@@ -52,6 +53,17 @@ app.route(
 		webHook: true,
 		webSocket: true,
 		kvBinding: "KEYVALUE",
+		sendEmail: async (email, data) => {
+			sendEmail({
+				from: "<Simple Sarvam> dev@manolo.in",
+				to: email,
+				text: [
+					`Click on the link to start downloading`,
+					...data.map((file) => `${file.filename}: ${file.url}`),
+				].join("\n"),
+				subject: "Your files are ready to download -  Simple Sarvam",
+			});
+		},
 	}),
 );
 
