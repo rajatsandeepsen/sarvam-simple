@@ -49,7 +49,9 @@ export function FileUploadComponent() {
 	const [files, setFiles] = useState<File[]>([]);
 
 	const mutation = useMutation(
-		(id ? visionAPI[":id"] : visionAPI).upload.$post.mutationOptions({
+		(
+			(id ? visionAPI[":id"] : visionAPI) as (typeof visionAPI)[":id"]
+		).upload.$post.mutationOptions({
 			async onSuccess(data) {
 				router.push(`/vision/job?id=${data.id}`);
 			},

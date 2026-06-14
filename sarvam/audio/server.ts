@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import z from "zod";
 import { env } from "@/lib/env";
 import { generateId } from "@/lib/utils";
+import { getKV, type JobCollection, resolveJobId } from "@/sarvam/utils";
 import { audioJobSDK } from ".";
 import { createSarvamAudio, uploadSingleFile } from "./api";
 import { webhook as webhookServer } from "./webhook";
@@ -16,17 +17,7 @@ const uploadFormSchema = z.object({
 	file: z.union([z.instanceof(File), z.array(z.instanceof(File)).min(1)]),
 });
 
-type AudioJobCollection = {
-	job_id: string;
-	email?: string;
-};
-
-const getCollection = async (kv: KVNamespace, id: string) => {
-	const collection = await kv.get(id);
-	if (!collection) return null;
-
-	return JSON.parse(collection) as AudioJobCollection;
-};
+type AudioJobCollection = JobCollection;
 
 const audioServer = <KV extends string>({
 	webSocket = false,
@@ -45,27 +36,6 @@ const audioServer = <KV extends string>({
 		}[],
 	) => Promise<void>;
 } = {}) => {
-	const getKV = (c: { env: Record<KV, KVNamespace> }) => {
-		if (!kvBinding) return null;
-
-		return c.env[kvBinding as KV] as KVNamespace | undefined;
-	};
-
-	const resolveJobId = async (
-		c: { env: Record<KV, KVNamespace> },
-		id: string,
-	) => {
-		const kv = getKV(c);
-		if (!kv) {
-			return { job_id: id, collection: null as AudioJobCollection | null };
-		}
-
-		const collection = await getCollection(kv, id);
-		if (!collection?.job_id) return null;
-
-		return { job_id: collection.job_id, collection };
-	};
-
 	const app = new Hono<{
 		Bindings: Record<KV, KVNamespace>;
 	}>()
@@ -74,7 +44,8 @@ const audioServer = <KV extends string>({
 			zValidator("form", uploadFormSchema),
 			zValidator("json", idParamSchema.partial().optional()),
 			async (c) => {
-				const kv = getKV(c);
+				const kv = getKV(c, kvBinding);
+				const webhookId = kv ? generateId() : null;
 
 				const { file: value } = c.req.valid("form");
 				const files = Array.isArray(value) ? value : [value];
@@ -85,6 +56,10 @@ const audioServer = <KV extends string>({
 				}));
 
 				const sarvamAudio = createSarvamAudio(env.SARVAM_API_KEY);
+				const callbackUrl =
+					webHook && webhookId
+						? new URL(`./${webhookId}/webhook`, c.req.url).toString()
+						: null;
 
 				const data = await sarvamAudio("/v1", {
 					throw: true,
@@ -93,15 +68,18 @@ const audioServer = <KV extends string>({
 							language_code: "en-IN",
 							mode: "transcribe",
 						},
-						// callback: {
-						// 	url: "https://simple.sarvam.workers.dev/api/audio/webhook",
-						// 	// auth_token: "hi from sarvam",
-						// },
+						...(callbackUrl
+							? {
+									callback: {
+										url: callbackUrl,
+									},
+								}
+							: {}),
 					},
 				});
 
 				const job_id = data.job_id;
-				const id = kv ? generateId() : job_id;
+				const id = webhookId ?? job_id;
 
 				if (kv) {
 					await kv.put(
@@ -118,7 +96,6 @@ const audioServer = <KV extends string>({
 						await Promise.all(
 							upload.map((u) => {
 								const file = folder.find((f) => f.id === u.filename)?.file;
-
 								if (!file) return null;
 
 								return uploadSingleFile({
@@ -141,7 +118,7 @@ const audioServer = <KV extends string>({
 			zValidator("form", uploadFormSchema),
 			async (c) => {
 				const { id } = c.req.valid("param");
-				const resolved = await resolveJobId(c, id);
+				const resolved = await resolveJobId(c, id, kvBinding);
 				if (!resolved) {
 					return c.json({ message: "Invalid id" }, 404);
 				}
@@ -163,7 +140,6 @@ const audioServer = <KV extends string>({
 						await Promise.all(
 							upload.map((u) => {
 								const file = folder.find((f) => f.id === u.filename)?.file;
-
 								if (!file) return null;
 
 								return uploadSingleFile({
@@ -182,7 +158,7 @@ const audioServer = <KV extends string>({
 		)
 		.post("/:id/status", zValidator("param", idParamSchema), async (c) => {
 			const { id } = c.req.valid("param");
-			const resolved = await resolveJobId(c, id);
+			const resolved = await resolveJobId(c, id, kvBinding);
 			if (!resolved) {
 				return c.json({ message: "Invalid id" }, 404);
 			}
@@ -194,7 +170,7 @@ const audioServer = <KV extends string>({
 		})
 		.post("/:id/download", zValidator("param", idParamSchema), async (c) => {
 			const { id } = c.req.valid("param");
-			const resolved = await resolveJobId(c, id);
+			const resolved = await resolveJobId(c, id, kvBinding);
 			if (!resolved) {
 				return c.json({ message: "Invalid id" }, 404);
 			}
@@ -214,11 +190,11 @@ const audioServer = <KV extends string>({
 				}),
 			),
 			async (c) => {
-				const kv = getKV(c);
+				const kv = getKV(c, kvBinding);
 				const { id } = c.req.valid("param");
 				const { email } = c.req.valid("json");
 
-				const resolved = await resolveJobId(c, id);
+				const resolved = await resolveJobId(c, id, kvBinding);
 				if (!resolved) {
 					return c.json({ message: "Invalid id" }, 404);
 				}
@@ -242,7 +218,16 @@ const audioServer = <KV extends string>({
 			},
 		);
 
-	if (webHook) app.route("/webhook", webhookServer());
+	if (webHook) {
+		app.route(
+			"/:id/webhook",
+			webhookServer({
+				kvBinding,
+				sendEmail,
+			}),
+		);
+	}
+
 	if (webSocket) app.route("/ws", webSocketServer);
 
 	return app;

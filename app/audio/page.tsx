@@ -49,7 +49,9 @@ export function FileUploadComponent() {
 	const [files, setFiles] = useState<File[]>([]);
 
 	const mutation = useMutation(
-		(id ? audioAPI[":id"] : audioAPI).upload.$post.mutationOptions({
+		(
+			(id ? audioAPI[":id"] : audioAPI) as (typeof audioAPI)[":id"]
+		).upload.$post.mutationOptions({
 			async onSuccess(data) {
 				router.push(`/audio/job?id=${data.id}`);
 			},
