@@ -1,7 +1,7 @@
 import { betterFetch, createFetch, createSchema } from "@better-fetch/fetch";
 import { z } from "zod";
 
-const speechToTextLanguageSchema = z.enum([
+export const speechToTextLanguageSchema = z.enum([
 	"unknown",
 	"hi-IN",
 	"bn-IN",
@@ -30,7 +30,7 @@ const speechToTextLanguageSchema = z.enum([
 
 const speechToTextModelSchema = z.enum(["saarika:v2.5", "saaras:v3"]);
 
-const speechToTextModeSchema = z.enum([
+export const speechToTextModeSchema = z.enum([
 	"transcribe",
 	"translate",
 	"verbatim",
@@ -130,22 +130,24 @@ const signedUrlDetailSchema = z
 	})
 	.passthrough();
 
+export const audioJobParametersSchema = z
+	.object({
+		language_code: speechToTextLanguageSchema.optional(),
+		model: speechToTextModelSchema.optional(),
+		mode: speechToTextModeSchema.optional(),
+		with_timestamps: z.boolean().optional(),
+		with_diarization: z.boolean().optional(),
+		num_speakers: z.number().int().positive().optional(),
+		input_audio_codec: inputAudioCodecSchema.optional(),
+	})
+	.passthrough();
+
 export const audioApiSchema = createSchema(
 	{
 		"": {
 			method: "post",
 			input: z.object({
-				job_parameters: z
-					.object({
-						language_code: speechToTextLanguageSchema.optional(),
-						model: speechToTextModelSchema.optional(),
-						mode: speechToTextModeSchema.optional(),
-						with_timestamps: z.boolean().optional(),
-						with_diarization: z.boolean().optional(),
-						num_speakers: z.number().int().positive().optional(),
-						input_audio_codec: inputAudioCodecSchema.optional(),
-					})
-					.passthrough(),
+				job_parameters: audioJobParametersSchema,
 				callback: z
 					.object({
 						url: z.string().url(),

@@ -3,9 +3,13 @@ import { Hono } from "hono";
 import z from "zod";
 import { env } from "@/lib/env";
 import { generateId } from "@/lib/utils";
-import { getKV, resolveJobId } from "@/sarvam/utils";
+import { getKV, getWebHook, resolveJobId } from "@/sarvam/utils";
 import { audioJobSDK } from ".";
-import { createSarvamAudio, uploadSingleFile } from "./api";
+import {
+	audioJobParametersSchema,
+	createSarvamAudio,
+	uploadSingleFile,
+} from "./api";
 import { webhook as webhookServer } from "./webhook";
 import { webSocket as webSocketServer } from "./websocket";
 
@@ -13,9 +17,30 @@ const idParamSchema = z.object({
 	id: z.string().min(1),
 });
 
-const uploadFormSchema = z.object({
+const uploadBaseFormSchema = z.object({
 	file: z.union([z.instanceof(File), z.array(z.instanceof(File)).min(1)]),
 	email: z.string().email().optional(),
+});
+
+const parseOptionalBoolean = (value: unknown) => {
+	if (value === true || value === "true") return true;
+	if (value === false || value === "false") return false;
+	return undefined;
+};
+
+const createUploadFormSchema = uploadBaseFormSchema.extend({
+	...audioJobParametersSchema.pick({
+		language_code: true,
+		mode: true,
+	}).shape,
+	with_timestamps: z.preprocess(
+		parseOptionalBoolean,
+		audioJobParametersSchema.shape.with_timestamps,
+	),
+	with_diarization: z.preprocess(
+		parseOptionalBoolean,
+		audioJobParametersSchema.shape.with_diarization,
+	),
 });
 
 const audioServer = <KV extends string>({
@@ -40,13 +65,13 @@ const audioServer = <KV extends string>({
 	}>()
 		.post(
 			"/upload",
-			zValidator("form", uploadFormSchema),
+			zValidator("form", createUploadFormSchema),
 			zValidator("json", idParamSchema.partial().optional()),
 			async (c) => {
 				const kv = getKV(c, kvBinding);
 				const webhookId = kv ? generateId() : null;
 
-				const { file: value, email } = c.req.valid("form");
+				const { file: value, email, ...moreParams } = c.req.valid("form");
 				const files = Array.isArray(value) ? value : [value];
 
 				const folder = files.map((f) => ({
@@ -55,25 +80,12 @@ const audioServer = <KV extends string>({
 				}));
 
 				const sarvamAudio = createSarvamAudio(env.SARVAM_API_KEY);
-				const callbackUrl =
-					webHook && webhookId
-						? new URL(`./${webhookId}/webhook`, c.req.url).toString()
-						: null;
-
 				const data = await sarvamAudio("/v1", {
 					throw: true,
 					body: {
-						job_parameters: {
-							language_code: "en-IN",
-							mode: "transcribe",
-						},
-						...(callbackUrl
-							? {
-									callback: {
-										url: callbackUrl,
-									},
-								}
-							: {}),
+						job_parameters: moreParams,
+						callback:
+							webHook && webhookId ? getWebHook(webhookId, "audio") : undefined,
 					},
 				});
 
@@ -117,7 +129,7 @@ const audioServer = <KV extends string>({
 		.post(
 			"/:id/upload",
 			zValidator("param", idParamSchema),
-			zValidator("form", uploadFormSchema),
+			zValidator("form", uploadBaseFormSchema),
 			async (c) => {
 				const kv = getKV(c, kvBinding);
 				const { id } = c.req.valid("param");

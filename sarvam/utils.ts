@@ -41,3 +41,8 @@ export const resolveJobId = async <
 
 	return { job_id: collection.job_id, collection };
 };
+
+export const getWebHook = (id: string, type: "audio" | "vision") => ({
+	url: `https://simple.sarvam.workers.dev/api/${type}/${id}/webhook`,
+	// "auth_token":
+});

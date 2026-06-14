@@ -1,7 +1,7 @@
 import { betterFetch, createFetch, createSchema } from "@better-fetch/fetch";
 import { z } from "zod";
 
-const documentIntelligenceLanguageSchema = z.enum([
+export const documentIntelligenceLanguageSchema = z.enum([
 	"hi-IN",
 	"en-IN",
 	"bn-IN",
@@ -27,7 +27,7 @@ const documentIntelligenceLanguageSchema = z.enum([
 	"sd-IN",
 ]);
 
-const outputFormatSchema = z.enum(["html", "md", "json"]);
+export const outputFormatSchema = z.enum(["html", "md", "json"]);
 
 const jobStateSchema = z.enum([
 	"Accepted",
@@ -85,15 +85,17 @@ const jobStatusOutputSchema = z
 	})
 	.passthrough();
 
+export const visionJobParametersSchema = z.object({
+	language: documentIntelligenceLanguageSchema.optional(),
+	output_format: outputFormatSchema.optional(),
+});
+
 export const visionApiSchema = createSchema(
 	{
 		"": {
 			method: "post",
 			input: z.object({
-				job_parameters: z.object({
-					language: documentIntelligenceLanguageSchema.optional(),
-					output_format: outputFormatSchema.optional(),
-				}),
+				job_parameters: visionJobParametersSchema,
 				callback: z
 					.object({
 						url: z.string().url(),

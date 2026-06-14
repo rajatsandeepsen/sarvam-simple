@@ -25,6 +25,14 @@ import {
 	FileUploadTrigger,
 } from "@/components/ui/file-upload";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { visionAPI } from "@/hooks/api";
 import { MutationRenderer } from "@/hooks/mutation";
 import { truncateText } from "@/lib/utils";
@@ -32,12 +40,15 @@ import { truncateText } from "@/lib/utils";
 const VISION_ACCEPT =
 	".pdf,.png,.jpg,.jpeg,.zip,application/pdf,image/png,image/jpeg,application/zip";
 
+const VISION_LANGUAGE_OPTIONS = ["en-IN", "hi-IN", "ta-IN", "te-IN"] as const;
+const VISION_OUTPUT_FORMAT_OPTIONS = ["md", "html", "json"] as const;
+
 export default function Home() {
 	return (
 		<Container>
 			<Card>
 				<CardHeader>
-					<CardTitle>Drop You Files Here</CardTitle>
+					<CardTitle>Drop You PDF/Image Files Here</CardTitle>
 				</CardHeader>
 				<FileUploadComponent />
 			</Card>
@@ -49,6 +60,10 @@ export function FileUploadComponent() {
 	const router = useRouter();
 	const [files, setFiles] = useState<File[]>([]);
 	const [email, setEmail] = useState("");
+	const [language, setLanguage] =
+		useState<(typeof VISION_LANGUAGE_OPTIONS)[number]>("en-IN");
+	const [outputFormat, setOutputFormat] =
+		useState<(typeof VISION_OUTPUT_FORMAT_OPTIONS)[number]>("md");
 
 	const mutation = useMutation(
 		(
@@ -98,12 +113,63 @@ export function FileUploadComponent() {
 									</Button>
 								</FileUploadTrigger>
 							</FileUploadDropzone>
-							<Input
-								type="email"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
-								placeholder="Email (optional)"
-							/>
+							{files.length > 0 && (
+								<>
+									<Input
+										type="email"
+										value={email}
+										onChange={(e) => setEmail(e.target.value)}
+										placeholder="Email (optional)"
+									/>
+
+									<div className="grid gap-3 md:grid-cols-2">
+										<div className="space-y-2">
+											<Label>Language</Label>
+											<Select
+												value={language}
+												onValueChange={(value) =>
+													setLanguage(
+														value as (typeof VISION_LANGUAGE_OPTIONS)[number],
+													)
+												}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder="Select language" />
+												</SelectTrigger>
+												<SelectContent>
+													{VISION_LANGUAGE_OPTIONS.map((option) => (
+														<SelectItem key={option} value={option}>
+															{option}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="space-y-2">
+											<Label>Output format</Label>
+											<Select
+												value={outputFormat}
+												onValueChange={(value) =>
+													setOutputFormat(
+														value as (typeof VISION_OUTPUT_FORMAT_OPTIONS)[number],
+													)
+												}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder="Select output format" />
+												</SelectTrigger>
+												<SelectContent>
+													{VISION_OUTPUT_FORMAT_OPTIONS.map((option) => (
+														<SelectItem key={option} value={option}>
+															{option}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+									</div>
+								</>
+							)}
 							<FileUploadList>
 								{files.map((file, index) => (
 									<FileUploadItem
@@ -131,11 +197,18 @@ export function FileUploadComponent() {
 								onClick={() => {
 									mutate({
 										param: { id: id ?? "" },
-										form: {
-											file: files,
-											...(email.trim() ? { email: email.trim() } : {}),
-										},
-									});
+										form: id
+											? {
+													file: files,
+													...(email.trim() ? { email: email.trim() } : {}),
+												}
+											: {
+													file: files,
+													...(email.trim() ? { email: email.trim() } : {}),
+													language,
+													output_format: outputFormat,
+												},
+									} as never);
 								}}
 							>
 								Upload and Start Processing

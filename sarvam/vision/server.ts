@@ -3,9 +3,13 @@ import { Hono } from "hono";
 import z from "zod";
 import { env } from "@/lib/env";
 import { generateId } from "@/lib/utils";
-import { getKV, resolveJobId } from "@/sarvam/utils";
+import { getKV, getWebHook, resolveJobId } from "@/sarvam/utils";
 import { visionJobSDK } from ".";
-import { createSarvamVision, uploadSingleFile } from "./api";
+import {
+	createSarvamVision,
+	uploadSingleFile,
+	visionJobParametersSchema,
+} from "./api";
 import { webhook as webhookServer } from "./webhook";
 import { webSocket as webSocketServer } from "./websocket";
 
@@ -13,10 +17,17 @@ const idParamSchema = z.object({
 	id: z.string().min(1),
 });
 
-const uploadFormSchema = z.object({
+const uploadBaseFormSchema = z.object({
 	file: z.union([z.instanceof(File), z.array(z.instanceof(File)).min(1)]),
 	email: z.string().email().optional(),
 });
+
+const createUploadFormSchema = uploadBaseFormSchema.extend(
+	visionJobParametersSchema.pick({
+		language: true,
+		output_format: true,
+	}).shape,
+);
 
 const visionServer = <KV extends string>({
 	webSocket = false,
@@ -40,13 +51,13 @@ const visionServer = <KV extends string>({
 	}>()
 		.post(
 			"/upload",
-			zValidator("form", uploadFormSchema),
+			zValidator("form", createUploadFormSchema),
 			zValidator("json", idParamSchema.partial().optional()),
 			async (c) => {
 				const kv = getKV(c, kvBinding);
 				const webhookId = kv ? generateId() : null;
 
-				const { file: value, email } = c.req.valid("form");
+				const { file: value, email, ...moreParams } = c.req.valid("form");
 				const files = Array.isArray(value) ? value : [value];
 
 				const folder = files.map((f) => ({
@@ -55,25 +66,14 @@ const visionServer = <KV extends string>({
 				}));
 
 				const sarvamVision = createSarvamVision(env.SARVAM_API_KEY);
-				const callbackUrl =
-					webHook && webhookId
-						? new URL(`./${webhookId}/webhook`, c.req.url).toString()
-						: null;
-
 				const data = await sarvamVision("/v1", {
 					throw: true,
 					body: {
-						job_parameters: {
-							language: "en-IN",
-							output_format: "md",
-						},
-						...(callbackUrl
-							? {
-									callback: {
-										url: callbackUrl,
-									},
-								}
-							: {}),
+						job_parameters: moreParams,
+						callback:
+							webHook && webhookId
+								? getWebHook(webhookId, "vision")
+								: undefined,
 					},
 				});
 
@@ -117,7 +117,7 @@ const visionServer = <KV extends string>({
 		.post(
 			"/:id/upload",
 			zValidator("param", idParamSchema),
-			zValidator("form", uploadFormSchema),
+			zValidator("form", uploadBaseFormSchema),
 			async (c) => {
 				const kv = getKV(c, kvBinding);
 				const { id } = c.req.valid("param");

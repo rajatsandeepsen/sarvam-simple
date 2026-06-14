@@ -16,6 +16,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	FileUpload,
 	FileUploadDropzone,
@@ -27,6 +28,14 @@ import {
 	FileUploadTrigger,
 } from "@/components/ui/file-upload";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { audioAPI, visionAPI } from "@/hooks/api";
 import { truncateText } from "@/lib/utils";
 
@@ -37,6 +46,17 @@ const AUDIO_ACCEPT =
 	".wav,.mp3,.m4a,.aac,.ogg,.opus,.flac,.webm,.amr,audio/wav,audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/opus,audio/flac,audio/webm,audio/amr";
 
 const SMART_ACCEPT = `${VISION_ACCEPT},${AUDIO_ACCEPT}`;
+
+const AUDIO_LANGUAGE_OPTIONS = ["en-IN", "hi-IN", "ta-IN", "te-IN"] as const;
+const AUDIO_MODE_OPTIONS = [
+	"transcribe",
+	"translate",
+	"verbatim",
+	"translit",
+	"codemix",
+] as const;
+const VISION_LANGUAGE_OPTIONS = ["en-IN", "hi-IN", "ta-IN", "te-IN"] as const;
+const VISION_OUTPUT_FORMAT_OPTIONS = ["md", "html", "json"] as const;
 
 type InputMode = "audio" | "vision" | null;
 
@@ -81,6 +101,16 @@ export default function HomePage() {
 	const router = useRouter();
 	const [files, setFiles] = useState<File[]>([]);
 	const [email, setEmail] = useState("");
+	const [audioLanguageCode, setAudioLanguageCode] =
+		useState<(typeof AUDIO_LANGUAGE_OPTIONS)[number]>("en-IN");
+	const [audioMode, setAudioMode] =
+		useState<(typeof AUDIO_MODE_OPTIONS)[number]>("transcribe");
+	const [withTimestamps, setWithTimestamps] = useState(false);
+	const [withDiarization, setWithDiarization] = useState(false);
+	const [visionLanguage, setVisionLanguage] =
+		useState<(typeof VISION_LANGUAGE_OPTIONS)[number]>("en-IN");
+	const [visionOutputFormat, setVisionOutputFormat] =
+		useState<(typeof VISION_OUTPUT_FORMAT_OPTIONS)[number]>("md");
 
 	const audioMutation = useMutation(
 		audioAPI.upload.$post.mutationOptions({
@@ -179,6 +209,10 @@ export default function HomePage() {
 				form: {
 					file: files,
 					...(email.trim() ? { email: email.trim() } : {}),
+					language_code: audioLanguageCode,
+					mode: audioMode,
+					with_timestamps: String(withTimestamps),
+					with_diarization: String(withDiarization),
 				},
 			});
 			return;
@@ -188,9 +222,23 @@ export default function HomePage() {
 			form: {
 				file: files,
 				...(email.trim() ? { email: email.trim() } : {}),
+				language: visionLanguage,
+				output_format: visionOutputFormat,
 			},
 		});
-	}, [audioMutation, email, files, hasMixedTypes, visionMutation]);
+	}, [
+		audioLanguageCode,
+		audioMode,
+		audioMutation,
+		email,
+		files,
+		hasMixedTypes,
+		visionLanguage,
+		visionMutation,
+		visionOutputFormat,
+		withDiarization,
+		withTimestamps,
+	]);
 
 	return (
 		<Container className="flex flex-col items-center space-y-4">
@@ -240,12 +288,134 @@ export default function HomePage() {
 							</FileUploadTrigger>
 						</FileUploadDropzone>
 
-						<Input
-							type="email"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							placeholder="Email (optional)"
-						/>
+						{files.length > 0 && (
+							<Input
+								type="email"
+								value={email}
+								onChange={(e) => setEmail(e.target.value)}
+								placeholder="Email (optional)"
+							/>
+						)}
+
+						{files.length > 0 && activeMode !== "vision" && (
+							<>
+								<div className="grid gap-3 md:grid-cols-2">
+									<div className="space-y-2">
+										<Label>Audio language</Label>
+										<Select
+											value={audioLanguageCode}
+											onValueChange={(value) =>
+												setAudioLanguageCode(
+													value as (typeof AUDIO_LANGUAGE_OPTIONS)[number],
+												)
+											}
+										>
+											<SelectTrigger className="w-full">
+												<SelectValue placeholder="Select language" />
+											</SelectTrigger>
+											<SelectContent>
+												{AUDIO_LANGUAGE_OPTIONS.map((option) => (
+													<SelectItem key={option} value={option}>
+														{option}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+									<div className="space-y-2">
+										<Label>Audio mode</Label>
+										<Select
+											value={audioMode}
+											onValueChange={(value) =>
+												setAudioMode(
+													value as (typeof AUDIO_MODE_OPTIONS)[number],
+												)
+											}
+										>
+											<SelectTrigger className="w-full">
+												<SelectValue placeholder="Select mode" />
+											</SelectTrigger>
+											<SelectContent>
+												{AUDIO_MODE_OPTIONS.map((option) => (
+													<SelectItem key={option} value={option}>
+														{option}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+								</div>
+								<div className="flex flex-col gap-2">
+									<Label className="flex items-center gap-2 font-normal">
+										<Checkbox
+											checked={withTimestamps}
+											onCheckedChange={(checked) =>
+												setWithTimestamps(checked === true)
+											}
+										/>
+										With timestamps
+									</Label>
+									<Label className="flex items-center gap-2 font-normal">
+										<Checkbox
+											checked={withDiarization}
+											onCheckedChange={(checked) =>
+												setWithDiarization(checked === true)
+											}
+										/>
+										With diarization
+									</Label>
+								</div>
+							</>
+						)}
+
+						{files.length > 0 && activeMode !== "audio" && (
+							<div className="grid gap-3 md:grid-cols-2">
+								<div className="space-y-2">
+									<Label>Vision language</Label>
+									<Select
+										value={visionLanguage}
+										onValueChange={(value) =>
+											setVisionLanguage(
+												value as (typeof VISION_LANGUAGE_OPTIONS)[number],
+											)
+										}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue placeholder="Select language" />
+										</SelectTrigger>
+										<SelectContent>
+											{VISION_LANGUAGE_OPTIONS.map((option) => (
+												<SelectItem key={option} value={option}>
+													{option}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="space-y-2">
+									<Label>Vision output format</Label>
+									<Select
+										value={visionOutputFormat}
+										onValueChange={(value) =>
+											setVisionOutputFormat(
+												value as (typeof VISION_OUTPUT_FORMAT_OPTIONS)[number],
+											)
+										}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue placeholder="Select output format" />
+										</SelectTrigger>
+										<SelectContent>
+											{VISION_OUTPUT_FORMAT_OPTIONS.map((option) => (
+												<SelectItem key={option} value={option}>
+													{option}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+						)}
 
 						<FileUploadList>
 							{files.map((file, index) => (

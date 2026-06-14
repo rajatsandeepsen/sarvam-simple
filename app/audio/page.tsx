@@ -14,6 +14,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	FileUpload,
 	FileUploadDropzone,
@@ -25,6 +26,14 @@ import {
 	FileUploadTrigger,
 } from "@/components/ui/file-upload";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { audioAPI } from "@/hooks/api";
 import { MutationRenderer } from "@/hooks/mutation";
 import { truncateText } from "@/lib/utils";
@@ -32,12 +41,21 @@ import { truncateText } from "@/lib/utils";
 const AUDIO_ACCEPT =
 	".wav,.mp3,.m4a,.aac,.ogg,.opus,.flac,.webm,.amr,audio/wav,audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/opus,audio/flac,audio/webm,audio/amr";
 
+const AUDIO_LANGUAGE_OPTIONS = ["en-IN", "hi-IN", "ta-IN", "te-IN"] as const;
+const AUDIO_MODE_OPTIONS = [
+	"transcribe",
+	"translate",
+	"verbatim",
+	"translit",
+	"codemix",
+] as const;
+
 export default function Home() {
 	return (
 		<Container>
 			<Card>
 				<CardHeader>
-					<CardTitle>Drop You Files Here</CardTitle>
+					<CardTitle>Drop You Audio Files Here</CardTitle>
 				</CardHeader>
 				<FileUploadComponent />
 			</Card>
@@ -48,7 +66,13 @@ export function FileUploadComponent() {
 	const id = useSearchParams().get("id");
 	const router = useRouter();
 	const [files, setFiles] = useState<File[]>([]);
-	const [email, setEmail] = useState();
+	const [email, setEmail] = useState("");
+	const [languageCode, setLanguageCode] =
+		useState<(typeof AUDIO_LANGUAGE_OPTIONS)[number]>("en-IN");
+	const [mode, setMode] =
+		useState<(typeof AUDIO_MODE_OPTIONS)[number]>("transcribe");
+	const [withTimestamps, setWithTimestamps] = useState(false);
+	const [withDiarization, setWithDiarization] = useState(false);
 
 	const mutation = useMutation(
 		(
@@ -98,12 +122,80 @@ export function FileUploadComponent() {
 									</Button>
 								</FileUploadTrigger>
 							</FileUploadDropzone>
-							<Input
-								type="email"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
-								placeholder="Email (optional)"
-							/>
+							{files.length > 0 && (
+								<>
+									<Input
+										type="email"
+										value={email}
+										onChange={(e) => setEmail(e.target.value)}
+										placeholder="Email (optional)"
+									/>
+									<div className="grid gap-3 md:grid-cols-2">
+										<div className="space-y-2">
+											<Label>Language</Label>
+											<Select
+												value={languageCode}
+												onValueChange={(value) =>
+													setLanguageCode(
+														value as (typeof AUDIO_LANGUAGE_OPTIONS)[number],
+													)
+												}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder="Select language" />
+												</SelectTrigger>
+												<SelectContent>
+													{AUDIO_LANGUAGE_OPTIONS.map((option) => (
+														<SelectItem key={option} value={option}>
+															{option}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+										<div className="space-y-2">
+											<Label>Mode</Label>
+											<Select
+												value={mode}
+												onValueChange={(value) =>
+													setMode(value as (typeof AUDIO_MODE_OPTIONS)[number])
+												}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder="Select mode" />
+												</SelectTrigger>
+												<SelectContent>
+													{AUDIO_MODE_OPTIONS.map((option) => (
+														<SelectItem key={option} value={option}>
+															{option}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										</div>
+									</div>
+									<div className="flex flex-col gap-2">
+										<Label className="flex items-center gap-2 font-normal">
+											<Checkbox
+												checked={withTimestamps}
+												onCheckedChange={(checked) =>
+													setWithTimestamps(checked === true)
+												}
+											/>
+											With timestamps
+										</Label>
+										<Label className="flex items-center gap-2 font-normal">
+											<Checkbox
+												checked={withDiarization}
+												onCheckedChange={(checked) =>
+													setWithDiarization(checked === true)
+												}
+											/>
+											With diarization
+										</Label>
+									</div>
+								</>
+							)}
 							<FileUploadList>
 								{files.map((file, index) => (
 									<FileUploadItem
@@ -131,11 +223,20 @@ export function FileUploadComponent() {
 								onClick={() => {
 									mutate({
 										param: { id: id ?? "" },
-										form: {
-											file: files,
-											...(email.trim() ? { email: email.trim() } : {}),
-										},
-									});
+										form: id
+											? {
+													file: files,
+													...(email.trim() ? { email: email.trim() } : {}),
+												}
+											: {
+													file: files,
+													...(email.trim() ? { email: email.trim() } : {}),
+													language_code: languageCode,
+													mode,
+													with_timestamps: String(withTimestamps),
+													with_diarization: String(withDiarization),
+												},
+									} as never);
 								}}
 							>
 								Upload and Start Processing
