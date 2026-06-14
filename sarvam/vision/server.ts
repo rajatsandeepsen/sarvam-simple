@@ -16,6 +16,18 @@ const uploadFormSchema = z.object({
 	file: z.union([z.instanceof(File), z.array(z.instanceof(File)).min(1)]),
 });
 
+type VisionJobCollection = {
+	job_id: string;
+	email?: string;
+};
+
+const getCollection = async (kv: KVNamespace, id: string) => {
+	const collection = await kv.get(id);
+	if (!collection) return null;
+
+	return JSON.parse(collection) as VisionJobCollection;
+};
+
 const visionServer = <KV extends string>({
 	webSocket = false,
 	webHook = false,
@@ -33,6 +45,27 @@ const visionServer = <KV extends string>({
 		}[],
 	) => Promise<void>;
 } = {}) => {
+	const getKV = (c: { env: Record<KV, KVNamespace> }) => {
+		if (!kvBinding) return null;
+
+		return c.env[kvBinding as KV] as KVNamespace | undefined;
+	};
+
+	const resolveJobId = async (
+		c: { env: Record<KV, KVNamespace> },
+		id: string,
+	) => {
+		const kv = getKV(c);
+		if (!kv) {
+			return { job_id: id, collection: null as VisionJobCollection | null };
+		}
+
+		const collection = await getCollection(kv, id);
+		if (!collection?.job_id) return null;
+
+		return { job_id: collection.job_id, collection };
+	};
+
 	const app = new Hono<{
 		Bindings: Record<KV, KVNamespace>;
 	}>()
@@ -41,6 +74,8 @@ const visionServer = <KV extends string>({
 			zValidator("form", uploadFormSchema),
 			zValidator("json", idParamSchema.partial().optional()),
 			async (c) => {
+				const kv = getKV(c);
+
 				const { file: value } = c.req.valid("form");
 
 				const files = Array.isArray(value) ? value : [value];
@@ -67,6 +102,15 @@ const visionServer = <KV extends string>({
 				});
 
 				const job_id = data.job_id;
+				const id = kv ? generateId() : job_id;
+
+				if (kv) {
+					await kv.put(
+						id,
+						JSON.stringify({ job_id } satisfies VisionJobCollection),
+					);
+				}
+
 				const api = visionJobSDK(job_id);
 				const upload = await api.uploadFiles(folder.map((f) => f.id));
 
@@ -89,7 +133,7 @@ const visionServer = <KV extends string>({
 					})(),
 				);
 
-				return c.json({ job_id }, 200);
+				return c.json({ id }, 200);
 			},
 		)
 		.post(
@@ -97,7 +141,13 @@ const visionServer = <KV extends string>({
 			zValidator("param", idParamSchema),
 			zValidator("form", uploadFormSchema),
 			async (c) => {
-				const { id: job_id } = c.req.valid("param");
+				const { id } = c.req.valid("param");
+				const resolved = await resolveJobId(c, id);
+				if (!resolved) {
+					return c.json({ message: "Invalid id" }, 404);
+				}
+
+				const { job_id } = resolved;
 				const { file: value } = c.req.valid("form");
 
 				const files = Array.isArray(value) ? value : [value];
@@ -129,21 +179,29 @@ const visionServer = <KV extends string>({
 					})(),
 				);
 
-				return c.json({ job_id }, 200);
+				return c.json({ id }, 200);
 			},
 		)
 		.post("/:id/status", zValidator("param", idParamSchema), async (c) => {
-			const { id: job_id } = c.req.valid("param");
+			const { id } = c.req.valid("param");
+			const resolved = await resolveJobId(c, id);
+			if (!resolved) {
+				return c.json({ message: "Invalid id" }, 404);
+			}
 
-			const api = visionJobSDK(job_id);
+			const api = visionJobSDK(resolved.job_id);
 			const data = await api.getStatus();
 
 			return c.json(data, 200);
 		})
 		.post("/:id/download", zValidator("param", idParamSchema), async (c) => {
-			const { id: job_id } = c.req.valid("param");
+			const { id } = c.req.valid("param");
+			const resolved = await resolveJobId(c, id);
+			if (!resolved) {
+				return c.json({ message: "Invalid id" }, 404);
+			}
 
-			const api = visionJobSDK(job_id);
+			const api = visionJobSDK(resolved.job_id);
 			const data = await api.downloadFiles();
 
 			return c.json(data, 200);
@@ -158,17 +216,29 @@ const visionServer = <KV extends string>({
 				}),
 			),
 			async (c) => {
-				const { id: job_id } = c.req.valid("param");
+				const kv = getKV(c);
+				const { id } = c.req.valid("param");
 				const { email } = c.req.valid("json");
 
-				const kv = c.env[kvBinding as keyof typeof c.env];
+				const resolved = await resolveJobId(c, id);
+				if (!resolved) {
+					return c.json({ message: "Invalid id" }, 404);
+				}
 
-				let data = {};
+				if (!kv) {
+					return c.json(
+						{ message: "KV not configured, email was not stored" },
+						200,
+					);
+				}
 
-				const collection = await kv.get(job_id);
-				if (collection) data = JSON.parse(collection);
-
-				await kv.put(job_id, JSON.stringify({ ...data, email }));
+				await kv.put(
+					id,
+					JSON.stringify({
+						...(resolved.collection ?? { job_id: resolved.job_id }),
+						email,
+					}),
+				);
 
 				return c.json({ message: "Email registered successfully" }, 200);
 			},
