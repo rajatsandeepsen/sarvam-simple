@@ -1,8 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Loader2Icon } from "lucide-react";
+import { ExternalLinkIcon, Loader2Icon, MailIcon } from "lucide-react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { Container } from "@/components/container";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,9 +12,16 @@ import {
 	CardAction,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	FileUploadItemMetadataRaw,
+	FileUploadItemRaw,
+	FileUploadListRaw,
+} from "@/components/ui/file-upload";
+import { Input } from "@/components/ui/input";
 import {
 	Stepper,
 	StepperContent,
@@ -20,7 +29,6 @@ import {
 	StepperIndicator,
 	StepperItem,
 	StepperList,
-	StepperSeparator,
 	StepperTitle,
 	StepperTrigger,
 } from "@/components/ui/stepper";
@@ -103,9 +111,18 @@ function Page({ id }: { id: string }) {
 		NonNullable<typeof data>["job_state"] | "Loading"
 	>;
 
+	if (jobState === "completed")
+		return (
+			<Container>
+				<Card className="h-min min-w-md">
+					<DownloadStepContent id={id} />
+				</Card>
+			</Container>
+		);
+
 	return (
 		<Container>
-			<Card>
+			<Card className="h-min min-w-xs">
 				<CardHeader>
 					<CardTitle>Your files will be here soon</CardTitle>
 					<CardDescription>
@@ -158,35 +175,76 @@ function Page({ id }: { id: string }) {
 							})}
 						</StepperList>
 
-						<Card className="grow">
-							<CardContent>
-								<StepperContent value={"loading"}>
-									<CardTitle>Hi</CardTitle>
-								</StepperContent>
-								<StepperContent value={"accepted"}>
-									<CardTitle>Hi</CardTitle>
-								</StepperContent>
-								<StepperContent value={"pending"}>
-									<CardTitle>Hi</CardTitle>
-								</StepperContent>
-								<StepperContent value={"running"}>
-									<CardTitle>Hi</CardTitle>
-								</StepperContent>
-								<StepperContent value={"partiallycompleted"}>
-									<CardTitle>Hi</CardTitle>
-								</StepperContent>
-								<StepperContent value={"failed"}>
-									<CardTitle>{data?.error_message}</CardTitle>
-								</StepperContent>
-								<StepperContent value={"completed"}>
-									<DownloadStepContent id={id} />
-								</StepperContent>
-							</CardContent>
-						</Card>
+						<StepperContent value={"accepted"}>
+							<Card>
+								<CardHeader>
+									<CardDescription>
+										Your job is created, but no file has been uploaded yet.
+									</CardDescription>
+									<Button asChild>
+										<Link href={`/vision?job_id=${id}`}>Go to upload</Link>
+									</Button>
+								</CardHeader>
+							</Card>
+						</StepperContent>
+						<StepperContent value={"pending"}>
+							<Card>
+								<CardHeader>
+									<CardDescription>
+										If you dont wanna wait, Get notified when it finishes
+									</CardDescription>
+								</CardHeader>
+								<EmailStepContent id={id} />
+							</Card>
+						</StepperContent>
+						<StepperContent value={"running"}>
+							<Card>
+								<CardHeader>
+									<CardDescription>
+										If you dont wanna wait, Get notified when it finishes
+									</CardDescription>
+								</CardHeader>
+								<EmailStepContent id={id} />
+							</Card>
+						</StepperContent>
+						<StepperContent value={"partiallycompleted"}>
+							<Card>
+								<CardHeader>
+									<CardDescription>
+										Some files failed to process, but some are ready.
+									</CardDescription>
+								</CardHeader>
+							</Card>
+						</StepperContent>
+						<StepperContent value={"failed"}>
+							<Card>
+								<CardDescription>{data?.error_message}</CardDescription>
+							</Card>
+						</StepperContent>
 					</Stepper>
 				</CardContent>
 			</Card>
 		</Container>
+	);
+}
+
+function EmailStepContent({ id }: { id: string }) {
+	const [email, setEmail] = useState("");
+
+	return (
+		<CardContent>
+			<Input
+				type="email"
+				value={email}
+				onChange={(event) => setEmail(event.target.value)}
+				placeholder="you@example.com"
+				required
+			/>
+			<Button>
+				<MailIcon />
+				Save email
+			</Button>
+		</CardContent>
 	);
 }
 
@@ -198,38 +256,76 @@ function DownloadStepContent({ id }: { id: string }) {
 	);
 
 	if (isLoading) {
-		return <Loader2Icon className="animate-spin" />;
+		return (
+			<CardHeader>
+				<CardTitle>Loading Your Files</CardTitle>
+				<CardDescription>Just a wait a bit</CardDescription>
+				<CardAction>
+					<Button size={"icon"} variant={"outline"}>
+						<Loader2Icon className="animate-spin" />
+					</Button>
+				</CardAction>
+			</CardHeader>
+		);
 	}
 
 	if (isError) {
 		return (
-			<div className="text-red-600">
-				Failed to fetch downloads: {error?.message || "Unknown error"}
-			</div>
+			<CardHeader>
+				<CardTitle>Failed to fetch downloads</CardTitle>
+				<CardDescription>{error?.message || "Unknown error"}</CardDescription>
+			</CardHeader>
 		);
 	}
 
 	if (!data || data.length === 0) {
 		return (
-			<div className="text-muted-foreground">No download files available.</div>
+			<CardHeader>
+				<CardTitle>No files to download</CardTitle>
+				<CardDescription>
+					We couldn't find any files to download. This might be because all
+					files failed to process.
+				</CardDescription>
+			</CardHeader>
 		);
 	}
 
+	const downloadAll = () => {
+		for (const file of data) {
+			window.open(file.url, "_blank", "noopener,noreferrer");
+		}
+	};
+
 	return (
-		<ul className="space-y-2">
-			{data.map((file) => (
-				<li key={file.filename} className="rounded-md border p-2">
-					<div className="font-medium">{file.filename}</div>
-					<a
-						href={file.url}
-						target="_blank"
-						rel="noreferrer"
-						className="text-blue-600 underline"
-					>
-						Download
-					</a>
-				</li>
-			))}
-		</ul>
+		<>
+			<CardHeader>
+				<CardTitle>Your files are ready</CardTitle>
+				<CardDescription>Click on the link icon to download</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<FileUploadListRaw>
+					{data.map((file) => (
+						<Link
+							key={file.url}
+							href={file.url}
+							target="_blank"
+							rel="noreferrer"
+						>
+							<FileUploadItemRaw>
+								<FileUploadItemMetadataRaw>
+									{file.filename}
+								</FileUploadItemMetadataRaw>
+								<Button variant="ghost" size="icon">
+									<ExternalLinkIcon />
+								</Button>
+							</FileUploadItemRaw>
+						</Link>
+					))}
+				</FileUploadListRaw>
+			</CardContent>
+			<CardFooter>
+				<Button onClick={downloadAll}>Download all</Button>
+			</CardFooter>
+		</>
 	);
 }

@@ -925,6 +925,24 @@ interface FileUploadListProps extends React.ComponentProps<"div"> {
 	forceMount?: boolean;
 }
 
+function FileUploadListRaw(props: FileUploadListProps) {
+	const { className, orientation = "vertical", asChild, ...itemProps } = props;
+
+	const ListPrimitive = asChild ? SlotPrimitive.Slot : "div";
+
+	return (
+		<ListPrimitive
+			role="list"
+			className={cn(
+				"data-[state=inactive]:fade-out-0 data-[state=active]:fade-in-0 data-[state=inactive]:slide-out-to-top-2 data-[state=active]:slide-in-from-top-2 flex flex-col gap-2 data-[state=active]:animate-in data-[state=inactive]:animate-out",
+				orientation === "horizontal" && "flex-row overflow-x-auto p-1.5",
+				className,
+			)}
+			{...itemProps}
+		/>
+	);
+}
+
 function FileUploadList(props: FileUploadListProps) {
 	const {
 		className,
@@ -986,6 +1004,24 @@ interface FileUploadItemProps extends React.ComponentProps<"div"> {
 	asChild?: boolean;
 }
 
+function FileUploadItemRaw(props: Omit<FileUploadItemProps, "value">) {
+	const { asChild, className, ...itemProps } = props;
+
+	const ItemPrimitive = asChild ? SlotPrimitive.Slot : "div";
+
+	return (
+		<ItemPrimitive
+			role="listitem"
+			className={cn(
+				"relative flex items-center gap-2.5 rounded-md border p-3",
+				className,
+			)}
+			{...itemProps}
+		>
+			{props.children}
+		</ItemPrimitive>
+	);
+}
 function FileUploadItem(props: FileUploadItemProps) {
 	const { value, asChild, className, ...itemProps } = props;
 
@@ -1122,6 +1158,33 @@ interface FileUploadItemMetadataProps extends React.ComponentProps<"div"> {
 	size?: "default" | "sm";
 }
 
+function FileUploadItemMetadataRaw(props: FileUploadItemMetadataProps) {
+	const {
+		asChild,
+		size = "default",
+		children,
+		className,
+		...metadataProps
+	} = props;
+
+	const ItemMetadataPrimitive = asChild ? SlotPrimitive.Slot : "div";
+
+	return (
+		<ItemMetadataPrimitive
+			{...metadataProps}
+			className={cn("flex min-w-0 flex-1 flex-col", className)}
+		>
+			<span
+				className={cn(
+					"truncate font-medium text-sm",
+					size === "sm" && "font-normal text-[13px] leading-snug",
+				)}
+			>
+				{children}
+			</span>
+		</ItemMetadataPrimitive>
+	);
+}
 function FileUploadItemMetadata(props: FileUploadItemMetadataProps) {
 	const {
 		asChild,
@@ -1405,9 +1468,12 @@ export {
 	FileUploadItem,
 	FileUploadItemDelete,
 	FileUploadItemMetadata,
+	FileUploadItemMetadataRaw,
 	FileUploadItemPreview,
 	FileUploadItemProgress,
+	FileUploadItemRaw,
 	FileUploadList,
+	FileUploadListRaw,
 	type FileUploadProps,
 	FileUploadTrigger,
 	useStore as useFileUpload,

@@ -46,7 +46,7 @@ export const visionJobSDK = (job_id: string) => {
 				throw: true,
 			});
 
-			if (downloadData.job_state !== "Accepted")
+			if (downloadData.job_state !== "Completed")
 				throw new Error("Job not completed yet");
 
 			return Object.entries(downloadData.download_urls).map(

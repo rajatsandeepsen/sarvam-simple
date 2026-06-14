@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { Loader2Icon, LoaderIcon, Upload, X } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { Container } from "@/components/container";
@@ -41,11 +41,12 @@ export default function Home() {
 	);
 }
 export function FileUploadComponent() {
+	const job_id = useSearchParams().get("job_id");
 	const router = useRouter();
 	const [files, setFiles] = useState<File[]>([]);
 
 	const mutation = useMutation(
-		visionAPI.upload.$post.mutationOptions({
+		(job_id ? visionAPI[":id"] : visionAPI).upload.$post.mutationOptions({
 			async onSuccess(data) {
 				router.push(`/vision/job?id=${data.job_id}`);
 			},
@@ -114,10 +115,11 @@ export function FileUploadComponent() {
 								disabled={files.length === 0}
 								onClick={() => {
 									mutate({
+										param: { id: job_id ?? "" },
 										form: {
 											file: files,
 										},
-									});
+									} as { param: { id: string } });
 								}}
 							>
 								Upload and Start Processing

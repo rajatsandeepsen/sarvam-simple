@@ -76,8 +76,57 @@ const visionServer = ({
 
 			return c.json({ job_id });
 		})
+		.post("/:id/upload", async (c) => {
+			const job_id = c.req.param("id");
+
+			if (!job_id) {
+				return c.text("job_id is required", 400);
+			}
+
+			const body = await c.req.parseBody({ all: true });
+			const value = body["file"];
+
+			const files = Array.isArray(value)
+				? value.filter((item): item is File => item instanceof File)
+				: value instanceof File
+					? [value]
+					: [];
+
+			if (files.length === 0) {
+				return c.text("At least one file is required", 400);
+			}
+
+			const folder = files.map((f) => ({
+				file: f,
+				id: `${generateId()}.${f.name.split(".").pop()}`,
+			}));
+
+			const api = visionJobSDK(job_id);
+			const upload = await api.uploadFiles(folder.map((f) => f.id));
+
+			c.executionCtx.waitUntil(
+				(async () => {
+					await Promise.all(
+						upload.map((u) => {
+							const file = folder.find((f) => f.id === u.filename)?.file;
+
+							if (!file) return null;
+
+							return uploadSingleFile({
+								...u,
+								file,
+							});
+						}),
+					);
+
+					await api.start();
+				})(),
+			);
+
+			return c.json({ job_id });
+		})
 		.post("/:id/status", async (c) => {
-			const job_id = c.req.param("id")
+			const job_id = c.req.param("id");
 
 			if (!job_id) {
 				return c.text("job_id is required", 400);
@@ -89,7 +138,7 @@ const visionServer = ({
 			return c.json(data);
 		})
 		.post("/:id/download", async (c) => {
-			const job_id = c.req.param("id")
+			const job_id = c.req.param("id");
 
 			if (!job_id) {
 				return c.text("job_id is required", 400);
