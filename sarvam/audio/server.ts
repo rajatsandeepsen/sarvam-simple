@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import z from "zod";
 import { env } from "@/lib/env";
 import { generateId } from "@/lib/utils";
-import { getKV, type JobCollection, resolveJobId } from "@/sarvam/utils";
+import { getKV, resolveJobId } from "@/sarvam/utils";
 import { audioJobSDK } from ".";
 import { createSarvamAudio, uploadSingleFile } from "./api";
 import { webhook as webhookServer } from "./webhook";
@@ -15,9 +15,8 @@ const idParamSchema = z.object({
 
 const uploadFormSchema = z.object({
 	file: z.union([z.instanceof(File), z.array(z.instanceof(File)).min(1)]),
+	email: z.string().email().optional(),
 });
-
-type AudioJobCollection = JobCollection;
 
 const audioServer = <KV extends string>({
 	webSocket = false,
@@ -47,7 +46,7 @@ const audioServer = <KV extends string>({
 				const kv = getKV(c, kvBinding);
 				const webhookId = kv ? generateId() : null;
 
-				const { file: value } = c.req.valid("form");
+				const { file: value, email } = c.req.valid("form");
 				const files = Array.isArray(value) ? value : [value];
 
 				const folder = files.map((f) => ({
@@ -84,7 +83,10 @@ const audioServer = <KV extends string>({
 				if (kv) {
 					await kv.put(
 						id,
-						JSON.stringify({ job_id } satisfies AudioJobCollection),
+						JSON.stringify({
+							job_id,
+							...(email ? { email } : {}),
+						}),
 					);
 				}
 
@@ -117,6 +119,7 @@ const audioServer = <KV extends string>({
 			zValidator("param", idParamSchema),
 			zValidator("form", uploadFormSchema),
 			async (c) => {
+				const kv = getKV(c, kvBinding);
 				const { id } = c.req.valid("param");
 				const resolved = await resolveJobId(c, id, kvBinding);
 				if (!resolved) {
@@ -124,8 +127,18 @@ const audioServer = <KV extends string>({
 				}
 
 				const { job_id } = resolved;
-				const { file: value } = c.req.valid("form");
+				const { file: value, email } = c.req.valid("form");
 				const files = Array.isArray(value) ? value : [value];
+
+				if (kv && email) {
+					await kv.put(
+						id,
+						JSON.stringify({
+							...(resolved.collection ?? { job_id }),
+							email,
+						}),
+					);
+				}
 
 				const folder = files.map((f) => ({
 					file: f,

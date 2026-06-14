@@ -24,6 +24,7 @@ import {
 	FileUploadList,
 	FileUploadTrigger,
 } from "@/components/ui/file-upload";
+import { Input } from "@/components/ui/input";
 import { audioAPI } from "@/hooks/api";
 import { MutationRenderer } from "@/hooks/mutation";
 import { truncateText } from "@/lib/utils";
@@ -47,6 +48,7 @@ export function FileUploadComponent() {
 	const id = useSearchParams().get("id");
 	const router = useRouter();
 	const [files, setFiles] = useState<File[]>([]);
+	const [email, setEmail] = useState();
 
 	const mutation = useMutation(
 		(
@@ -96,6 +98,12 @@ export function FileUploadComponent() {
 									</Button>
 								</FileUploadTrigger>
 							</FileUploadDropzone>
+							<Input
+								type="email"
+								value={email}
+								onChange={(e) => setEmail(e.target.value)}
+								placeholder="Email (optional)"
+							/>
 							<FileUploadList>
 								{files.map((file, index) => (
 									<FileUploadItem
@@ -125,6 +133,7 @@ export function FileUploadComponent() {
 										param: { id: id ?? "" },
 										form: {
 											file: files,
+											...(email.trim() ? { email: email.trim() } : {}),
 										},
 									});
 								}}

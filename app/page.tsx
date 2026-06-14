@@ -26,6 +26,7 @@ import {
 	FileUploadList,
 	FileUploadTrigger,
 } from "@/components/ui/file-upload";
+import { Input } from "@/components/ui/input";
 import { audioAPI, visionAPI } from "@/hooks/api";
 import { truncateText } from "@/lib/utils";
 
@@ -79,6 +80,7 @@ function inferMode(file: File): InputMode {
 export default function HomePage() {
 	const router = useRouter();
 	const [files, setFiles] = useState<File[]>([]);
+	const [email, setEmail] = useState("");
 
 	const audioMutation = useMutation(
 		audioAPI.upload.$post.mutationOptions({
@@ -176,6 +178,7 @@ export default function HomePage() {
 			audioMutation.mutate({
 				form: {
 					file: files,
+					...(email.trim() ? { email: email.trim() } : {}),
 				},
 			});
 			return;
@@ -184,9 +187,10 @@ export default function HomePage() {
 		visionMutation.mutate({
 			form: {
 				file: files,
+				...(email.trim() ? { email: email.trim() } : {}),
 			},
 		});
-	}, [audioMutation, files, hasMixedTypes, visionMutation]);
+	}, [audioMutation, email, files, hasMixedTypes, visionMutation]);
 
 	return (
 		<Container className="flex flex-col items-center space-y-4">
@@ -235,6 +239,13 @@ export default function HomePage() {
 								</Button>
 							</FileUploadTrigger>
 						</FileUploadDropzone>
+
+						<Input
+							type="email"
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+							placeholder="Email (optional)"
+						/>
 
 						<FileUploadList>
 							{files.map((file, index) => (
