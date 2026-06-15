@@ -51,19 +51,21 @@ app.use(createVar("kv", (c) => c.env.KEYVALUE));
 app.route(
 	"/vision",
 	visionServer({
-		webHook: true,
+		SARVAM_API_KEY: env.SARVAM_API_KEY,
 		webSocket: true,
 		kvBinding: "KEYVALUE",
-		sendEmail: async (email, data) => {
-			sendEmail({
-				from: "<Simple Sarvam> dev@manolo.in",
-				to: email,
-				text: [
-					`Click on the link to start downloading`,
-					...data.map((file) => `${file.filename}: ${file.url}`),
-				].join("\n"),
-				subject: "Your files are ready to download -  Simple Sarvam",
-			});
+		webHook: {
+			sendEmail: async (email, data) => {
+				sendEmail({
+					from: "<Simple Sarvam> dev@manolo.in",
+					to: email,
+					text: [
+						`Click on the link to start downloading`,
+						...data.map((file) => `${file.filename}: ${file.url}`),
+					].join("\n"),
+					subject: "Your vision files are ready to download -  Simple Sarvam",
+				});
+			},
 		},
 	}),
 );
@@ -71,19 +73,21 @@ app.route(
 app.route(
 	"/audio",
 	audioServer({
-		webHook: true,
+		SARVAM_API_KEY: env.SARVAM_API_KEY,
 		webSocket: true,
 		kvBinding: "KEYVALUE",
-		sendEmail: async (email, data) => {
-			sendEmail({
-				from: "<Simple Sarvam> dev@manolo.in",
-				to: email,
-				text: [
-					`Click on the link to start downloading`,
-					...data.map((file) => `${file.filename}: ${file.url}`),
-				].join("\n"),
-				subject: "Your files are ready to download -  Simple Sarvam",
-			});
+		webHook: {
+			sendEmail: async (email, data) => {
+				sendEmail({
+					from: "<Simple Sarvam> dev@manolo.in",
+					to: email,
+					text: [
+						`Click on the link to start downloading`,
+						...data.map((file) => `${file.filename}: ${file.url}`),
+					].join("\n"),
+					subject: "Your audio files are ready to download -  Simple Sarvam",
+				});
+			},
 		},
 	}),
 );
@@ -108,6 +112,3 @@ export default {
 	fetch: app.fetch,
 	scheduled: cron.scheduled,
 };
-
-// import { SarvamDurableSocket } from "@/sarvam/durable-object";
-// export { SarvamDurableSocket };

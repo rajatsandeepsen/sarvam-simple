@@ -1,3 +1,13 @@
+export const getWebHook = (
+	id: string,
+	type: "audio" | "vision",
+	auth_token?: string,
+) => ({
+	// update your url here
+	url: `https://simple.sarvam.workers.dev/api/${type}/${id}/webhook`,
+	auth_token,
+});
+
 export type JobCollection = {
 	job_id: string;
 	email?: string;
@@ -42,7 +52,17 @@ export const resolveJobId = async <
 	return { job_id: collection.job_id, collection };
 };
 
-export const getWebHook = (id: string, type: "audio" | "vision") => ({
-	url: `https://simple.sarvam.workers.dev/api/${type}/${id}/webhook`,
-	// "auth_token":
-});
+import { createMiddleware } from "hono/factory";
+
+export const checkSarvamWebHook = (callbackToken?: string) =>
+	createMiddleware(async (c, next) => {
+		if (callbackToken) {
+			const signature = c.req.header("X-SARVAM-JOB-CALLBACK-TOKEN");
+
+			if (!signature) return c.json({ error: "Missing signature" }, 401);
+			if (signature !== callbackToken)
+				return c.json({ error: "Wrong signature" }, 401);
+		}
+
+		await next();
+	});

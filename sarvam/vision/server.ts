@@ -1,16 +1,19 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { upgradeWebSocket } from "hono/cloudflare-workers";
 import z from "zod";
-import { env } from "@/lib/env";
-import { getKV, getWebHook, resolveJobId } from "@/sarvam/utils";
+import {
+	checkSarvamWebHook,
+	getKV,
+	getWebHook,
+	resolveJobId,
+} from "@/sarvam/utils";
 import {
 	createSarvamVision,
 	uploadSingleFile,
 	visionJobParametersSchema,
 } from "./api";
 import { generateId, visionJobSDK } from "./sdk";
-import { webhook as webhookServer } from "./webhook";
-import { webSocket as webSocketServer } from "./websocket";
 
 const idParamSchema = z.object({
 	id: z.string().min(1),
@@ -27,20 +30,23 @@ const createUploadFormSchema = uploadBaseFormSchema.extend(
 
 const visionServer = <KV extends string>({
 	webSocket = false,
-	webHook = false,
-	sendEmail,
+	webHook,
 	kvBinding,
+	SARVAM_API_KEY = process.env.SARVAM_API_KEY as string,
 }: {
-	webSocket?: boolean;
-	webHook?: boolean;
+	SARVAM_API_KEY?: string;
 	kvBinding?: KV;
-	sendEmail?: (
-		email: string,
-		options: {
-			filename: string;
-			url: string;
-		}[],
-	) => Promise<void>;
+	webSocket?: boolean;
+	webHook?: {
+		authToken?: string;
+		sendEmail?: (
+			email: string,
+			options: {
+				filename: string;
+				url: string;
+			}[],
+		) => Promise<void>;
+	};
 } = {}) => {
 	const app = new Hono<{
 		Bindings: Record<KV, KVNamespace>;
@@ -61,14 +67,14 @@ const visionServer = <KV extends string>({
 					id: `${generateId()}.${f.name.split(".").pop()}`,
 				}));
 
-				const sarvamVision = createSarvamVision(env.SARVAM_API_KEY);
+				const sarvamVision = createSarvamVision(SARVAM_API_KEY);
 				const data = await sarvamVision("/v1", {
 					throw: true,
 					body: {
 						job_parameters: moreParams,
 						callback:
 							webHook && webhookId
-								? getWebHook(webhookId, "vision")
+								? getWebHook(webhookId, "vision", webHook.authToken)
 								: undefined,
 					},
 				});
@@ -86,7 +92,9 @@ const visionServer = <KV extends string>({
 					);
 				}
 
-				const api = visionJobSDK(job_id);
+				const api = visionJobSDK(job_id, {
+					SARVAM_API_KEY,
+				});
 				const upload = await api.uploadFiles(folder.map((f) => f.id));
 
 				c.executionCtx.waitUntil(
@@ -141,7 +149,7 @@ const visionServer = <KV extends string>({
 					id: `${generateId()}.${f.name.split(".").pop()}`,
 				}));
 
-				const api = visionJobSDK(job_id);
+				const api = visionJobSDK(job_id, { SARVAM_API_KEY });
 				const upload = await api.uploadFiles(folder.map((f) => f.id));
 
 				c.executionCtx.waitUntil(
@@ -172,7 +180,7 @@ const visionServer = <KV extends string>({
 				return c.json({ message: "Invalid id" }, 404);
 			}
 
-			const api = visionJobSDK(resolved.job_id);
+			const api = visionJobSDK(resolved.job_id, { SARVAM_API_KEY });
 			const data = await api.getStatus();
 
 			return c.json(data, 200);
@@ -184,7 +192,7 @@ const visionServer = <KV extends string>({
 				return c.json({ message: "Invalid id" }, 404);
 			}
 
-			const api = visionJobSDK(resolved.job_id);
+			const api = visionJobSDK(resolved.job_id, { SARVAM_API_KEY });
 			const data = await api.downloadFiles();
 
 			return c.json(data, 200);
@@ -228,16 +236,56 @@ const visionServer = <KV extends string>({
 		);
 
 	if (webHook) {
-		app.route(
+		app.post(
 			"/:id/webhook",
-			webhookServer({
-				kvBinding,
-				sendEmail,
-			}),
+			checkSarvamWebHook(webHook.authToken),
+			zValidator("param", idParamSchema),
+			async (c) => {
+				const { id } = c.req.valid("param");
+
+				const resolved = await resolveJobId(c, id, kvBinding);
+				if (!resolved) {
+					return c.json({ message: "Invalid id" }, 404);
+				}
+
+				const email = resolved?.collection?.email;
+				const job_id = resolved?.job_id;
+				const action = webHook?.sendEmail;
+
+				if (!email || !action) {
+					console.error("No Email");
+					return c.json({ message: "Webhook received" }, 200);
+				}
+
+				c.executionCtx.waitUntil(
+					(async () => {
+						const data = await visionJobSDK(job_id, {
+							SARVAM_API_KEY,
+						}).downloadFiles();
+						await action(email, data);
+					})(),
+				);
+
+				return c.json({ message: "Webhook received" }, 200);
+			},
 		);
 	}
 
-	if (webSocket) app.route("/ws", webSocketServer);
+	if (webSocket)
+		app.get(
+			"/:id/ws",
+			upgradeWebSocket((c) => {
+				return {
+					onMessage(event, ws) {
+						console.log(`Message from client: ${event.data}`);
+						ws.send("Hello from server!");
+					},
+					onClose: () => {
+						console.log("Connection closed");
+					},
+				};
+			}),
+		);
 
 	return app;
 };

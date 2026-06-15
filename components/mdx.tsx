@@ -20,7 +20,7 @@ const getNodeText = (node: React.ReactNode): string => {
 	}
 
 	if (typeof node === "object" && "props" in node) {
-		return getNodeText((node as React.ReactElement).props.children);
+		return getNodeText((node.props as { children: React.ReactNode }).children);
 	}
 
 	return "";

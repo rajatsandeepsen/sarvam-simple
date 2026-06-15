@@ -1,16 +1,19 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { upgradeWebSocket } from "hono/cloudflare-workers";
 import z from "zod";
-import { env } from "@/lib/env";
-import { getKV, getWebHook, resolveJobId } from "@/sarvam/utils";
+import {
+	checkSarvamWebHook,
+	getKV,
+	getWebHook,
+	resolveJobId,
+} from "@/sarvam/utils";
 import {
 	audioJobParametersSchema,
 	createSarvamAudio,
 	uploadSingleFile,
 } from "./api";
 import { audioJobSDK, generateId } from "./sdk";
-import { webhook as webhookServer } from "./webhook";
-import { webSocket as webSocketServer } from "./websocket";
 
 const idParamSchema = z.object({
 	id: z.string().min(1),
@@ -27,20 +30,23 @@ const uploadFormSchema = uploadBaseFormSchema.extend(
 
 const audioServer = <KV extends string>({
 	webSocket = false,
-	webHook = false,
-	sendEmail,
+	webHook,
 	kvBinding,
+	SARVAM_API_KEY = process.env.SARVAM_API_KEY as string,
 }: {
-	webSocket?: boolean;
-	webHook?: boolean;
+	SARVAM_API_KEY?: string;
 	kvBinding?: KV;
-	sendEmail?: (
-		email: string,
-		options: {
-			filename: string;
-			url: string;
-		}[],
-	) => Promise<void>;
+	webSocket?: boolean;
+	webHook?: {
+		authToken?: string;
+		sendEmail?: (
+			email: string,
+			options: {
+				filename: string;
+				url: string;
+			}[],
+		) => Promise<void>;
+	};
 } = {}) => {
 	const app = new Hono<{
 		Bindings: Record<KV, KVNamespace>;
@@ -61,13 +67,15 @@ const audioServer = <KV extends string>({
 					id: `${generateId()}.${f.name.split(".").pop()}`,
 				}));
 
-				const sarvamAudio = createSarvamAudio(env.SARVAM_API_KEY);
+				const sarvamAudio = createSarvamAudio(SARVAM_API_KEY);
 				const data = await sarvamAudio("/v1", {
 					throw: true,
 					body: {
 						job_parameters: moreParams,
 						callback:
-							webHook && webhookId ? getWebHook(webhookId, "audio") : undefined,
+							webHook && webhookId
+								? getWebHook(webhookId, "audio", webHook.authToken)
+								: undefined,
 					},
 				});
 
@@ -84,7 +92,9 @@ const audioServer = <KV extends string>({
 					);
 				}
 
-				const api = audioJobSDK(job_id);
+				const api = audioJobSDK(job_id, {
+					SARVAM_API_KEY,
+				});
 				const upload = await api.uploadFiles(folder.map((f) => f.id));
 
 				c.executionCtx.waitUntil(
@@ -139,7 +149,9 @@ const audioServer = <KV extends string>({
 					id: `${generateId()}.${f.name.split(".").pop()}`,
 				}));
 
-				const api = audioJobSDK(job_id);
+				const api = audioJobSDK(job_id, {
+					SARVAM_API_KEY,
+				});
 				const upload = await api.uploadFiles(folder.map((f) => f.id));
 
 				c.executionCtx.waitUntil(
@@ -170,7 +182,9 @@ const audioServer = <KV extends string>({
 				return c.json({ message: "Invalid id" }, 404);
 			}
 
-			const api = audioJobSDK(resolved.job_id);
+			const api = audioJobSDK(resolved.job_id, {
+				SARVAM_API_KEY,
+			});
 			const data = await api.getStatus();
 
 			return c.json(data, 200);
@@ -182,7 +196,9 @@ const audioServer = <KV extends string>({
 				return c.json({ message: "Invalid id" }, 404);
 			}
 
-			const api = audioJobSDK(resolved.job_id);
+			const api = audioJobSDK(resolved.job_id, {
+				SARVAM_API_KEY,
+			});
 			const data = await api.downloadFiles();
 
 			return c.json(data, 200);
@@ -226,16 +242,54 @@ const audioServer = <KV extends string>({
 		);
 
 	if (webHook) {
-		app.route(
+		app.post(
 			"/:id/webhook",
-			webhookServer({
-				kvBinding,
-				sendEmail,
-			}),
+			checkSarvamWebHook(webHook.authToken),
+			zValidator("param", idParamSchema),
+			async (c) => {
+				const { id } = c.req.valid("param");
+
+				const resolved = await resolveJobId(c, id, kvBinding);
+				if (!resolved) {
+					return c.json({ message: "Invalid id" }, 404);
+				}
+
+				const email = resolved?.collection?.email;
+				const job_id = resolved?.job_id;
+				const action = webHook?.sendEmail;
+
+				if (!email || !action) {
+					console.error("No Email");
+					return c.json({ message: "Webhook received" }, 200);
+				}
+
+				c.executionCtx.waitUntil(
+					(async () => {
+						const data = await audioJobSDK(job_id).downloadFiles();
+						await action(email, data);
+					})(),
+				);
+
+				return c.json({ message: "Webhook received" }, 200);
+			},
 		);
 	}
 
-	if (webSocket) app.route("/ws", webSocketServer);
+	if (webSocket)
+		app.get(
+			"/:id/ws",
+			upgradeWebSocket((c) => {
+				return {
+					onMessage(event, ws) {
+						console.log(`Message from client: ${event.data}`);
+						ws.send("Hello from server!");
+					},
+					onClose: () => {
+						console.log("Connection closed");
+					},
+				};
+			}),
+		);
 
 	return app;
 };

@@ -42,12 +42,7 @@
 			"type": "registry:item",
 			"title": "Sarvam Vision Server",
 			"description": "Hono server with Sarvam Vision API for batch processing",
-			"dependencies": [
-				"zod",
-				"hono",
-				"@hono/zod-validator",
-				"@better-fetch/fetch"
-			],
+			"dependencies": ["zod", "hono", "@hono/zod-validator"],
 			"envVars": {
 				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
 			},
@@ -70,12 +65,7 @@
 			"type": "registry:item",
 			"title": "Sarvam Audio Server",
 			"description": "Hono server with Sarvam Audio API for batch processing",
-			"dependencies": [
-				"zod",
-				"hono",
-				"@hono/zod-validator",
-				"@better-fetch/fetch"
-			],
+			"dependencies": ["zod", "hono", "@hono/zod-validator"],
 			"envVars": {
 				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
 			},
@@ -90,6 +80,62 @@
 					"path": "sarvam/audio/sdk.ts",
 					"type": "registry:file",
 					"target": "~/sarvam/audio/sdk.ts"
+				}
+			]
+		},
+		{
+			"name": "vision-server-webhook",
+			"type": "registry:item",
+			"title": "Sarvam Vision Server with WebHook",
+			"description": "Hono server with Sarvam Vision API for batch processing and webhook support",
+			"dependencies": ["zod", "hono", "@hono/zod-validator"],
+			"envVars": {
+				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
+			},
+			"registryDependencies": ["rajatsandeepsen/sarvam-simple/vision-api"],
+			"files": [
+				{
+					"path": "sarvam/vision/server.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/vision/server.ts"
+				},
+				{
+					"path": "sarvam/vision/sdk.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/vision/sdk.ts"
+				},
+				{
+					"path": "sarvam/utils.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/utils.ts"
+				}
+			]
+		},
+		{
+			"name": "audio-server-webhook",
+			"type": "registry:item",
+			"title": "Sarvam Audio Server with WebHook",
+			"description": "Hono server with Sarvam Audio API for batch processing and webhook support",
+			"dependencies": ["zod", "hono", "@hono/zod-validator"],
+			"envVars": {
+				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
+			},
+			"registryDependencies": ["rajatsandeepsen/sarvam-simple/audio-api"],
+			"files": [
+				{
+					"path": "sarvam/audio/server.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/audio/server.ts"
+				},
+				{
+					"path": "sarvam/audio/sdk.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/audio/sdk.ts"
+				},
+				{
+					"path": "sarvam/utils.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/utils.ts"
 				}
 			]
 		}
