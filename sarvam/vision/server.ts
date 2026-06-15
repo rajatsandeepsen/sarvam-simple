@@ -38,6 +38,7 @@ const visionServer = <KV extends string>({
 	kvBinding?: KV;
 	webSocket?: boolean;
 	webHook?: {
+		baseUrl: string;
 		authToken?: string;
 		sendEmail?: (
 			email: string,
@@ -74,7 +75,7 @@ const visionServer = <KV extends string>({
 						job_parameters: moreParams,
 						callback:
 							webHook && webhookId
-								? getWebHook(webhookId, "vision", webHook.authToken)
+								? getWebHook(webhookId, webHook.baseUrl, webHook.authToken)
 								: undefined,
 					},
 				});

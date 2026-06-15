@@ -48,8 +48,8 @@ form.set("language", "en-IN");
 form.set("output_format", "md"); // html | md | json
 
 const uploadRes = await fetch("/vision/upload", {
-  method: "POST",
-  body: form,
+	method: "POST",
+	body: form,
 });
 
 const { id } = await uploadRes.json();
@@ -59,7 +59,7 @@ const { id } = await uploadRes.json();
 
 ```ts
 const statusRes = await fetch(`/vision/${id}/status`, {
-  method: "POST",
+	method: "POST",
 });
 
 const status = await statusRes.json();
@@ -70,7 +70,7 @@ console.log(status.job_state);
 
 ```ts
 const downloadRes = await fetch(`/vision/${id}/download`, {
-  method: "POST",
+	method: "POST",
 });
 
 const files = await downloadRes.json();

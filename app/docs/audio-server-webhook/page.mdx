@@ -25,16 +25,19 @@ import audioServer from "./sarvam/audio/server";
 const app = new Hono();
 
 app.route(
-  "/audio",
-  audioServer({
-    kvBinding: "KV", // your Worker KV binding name
-    webHook: {
-      authToken: "your-callback-token",
-      sendEmail: async (email, files) => {
-        // files => [{ filename, url }]
-      },
-    },
-  }),
+	"/audio",
+	audioServer({
+		SARVAM_API_KEY: process.env.SARVAM_API_KEY,
+		kvBinding: "KEYVALUE",
+		webHook: {
+			baseUrl: "https://your-domain.com/api/vision",
+			authToken: "your-callback-token", // optional
+			sendEmail: async (email, files) => {
+				// write your own logic
+				// files => [{ filename, url }]
+			},
+		},
+	}),
 );
 
 export default app;
@@ -56,12 +59,8 @@ export default app;
 3. Sarvam calls `/audio/:id/webhook` after processing.
 4. Server resolves `id -> job_id`, downloads transcript URLs, then runs `sendEmail(email, files)`.
 
-## Important
+## Note
 
-`getWebHook()` in `sarvam/utils.ts` has a placeholder callback URL. Update it to your deployed API base URL.
+If `webhook.authToken` is set, webhook requests must include:
 
-```ts
-url: `https://simple.sarvam.workers.dev/api/${type}/${id}/webhook`
-```
-
-You can also skip webhook mode and just poll `/:id/status` + `/:id/download`.
+- `X-SARVAM-JOB-CALLBACK-TOKEN: <your-callback-token>`

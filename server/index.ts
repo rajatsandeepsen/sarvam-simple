@@ -55,6 +55,7 @@ app.route(
 		webSocket: true,
 		kvBinding: "KEYVALUE",
 		webHook: {
+			baseUrl: "https://simple.sarvam.workers.dev/api/vision",
 			sendEmail: async (email, data) => {
 				sendEmail({
 					from: "<Simple Sarvam> dev@manolo.in",
@@ -77,6 +78,7 @@ app.route(
 		webSocket: true,
 		kvBinding: "KEYVALUE",
 		webHook: {
+			baseUrl: "https://simple.sarvam.workers.dev/api/audio",
 			sendEmail: async (email, data) => {
 				sendEmail({
 					from: "<Simple Sarvam> dev@manolo.in",

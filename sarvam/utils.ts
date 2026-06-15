@@ -2,11 +2,10 @@ import { createMiddleware } from "hono/factory";
 
 export const getWebHook = (
 	id: string,
-	type: "audio" | "vision",
+	baseUrl: string,
 	auth_token?: string,
 ) => ({
-	// update your url here
-	url: `https://simple.sarvam.workers.dev/api/${type}/${id}/webhook`,
+	url: new URL(`/${id}/webhook`, baseUrl).toString(),
 	auth_token,
 });
 
