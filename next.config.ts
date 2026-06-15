@@ -2,6 +2,8 @@ import createMDX from "@next/mdx";
 import { env } from "env";
 import type { NextConfig } from "next";
 
+console.log("using server:", env.NEXT_PUBLIC_SERVER_URL, "\n\n");
+
 const nextConfig: NextConfig = {
 	pageExtensions: ["js", "jsx", "md", "mdx", "ts", "tsx"],
 	output: "export",
