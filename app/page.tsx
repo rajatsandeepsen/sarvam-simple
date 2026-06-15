@@ -263,13 +263,10 @@ export default function HomePage() {
 		<Container className="flex flex-col items-center space-y-4">
 			<Card className="w-md">
 				<CardHeader>
-					<CardTitle>Simple Sarvam</CardTitle>
+					<CardTitle>Demo for Simple Sarvam</CardTitle>
 					<CardDescription>
-						Bulk process your files using Sarvam AI batch API in serverless
-						environment
-					</CardDescription>
-					<CardDescription>
-						Just deploy to any serverless javascript worker
+						This project can Bulk process your files using Sarvam AI batch API
+						in serverless environment
 					</CardDescription>
 				</CardHeader>
 
@@ -492,16 +489,6 @@ export default function HomePage() {
 						</Button>
 					</CardFooter>
 				</FileUpload>
-			</Card>
-			<Card className="w-min">
-				<CardFooter className="flex flex-row justify-between gap-4">
-					<Button className="grow" asChild>
-						<Link href="/vision">Use Vision Specific</Link>
-					</Button>
-					<Button className="grow" asChild>
-						<Link href="/audio">Use Audio Specific</Link>
-					</Button>
-				</CardFooter>
 			</Card>
 		</Container>
 	);
