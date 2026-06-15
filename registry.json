@@ -43,6 +43,7 @@
 			"title": "Sarvam Vision Server",
 			"description": "Hono server with Sarvam Vision API for batch processing",
 			"dependencies": ["zod", "hono", "@hono/zod-validator"],
+			"devDependencies": ["wrangler"],
 			"envVars": {
 				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
 			},
@@ -66,6 +67,7 @@
 			"title": "Sarvam Audio Server",
 			"description": "Hono server with Sarvam Audio API for batch processing",
 			"dependencies": ["zod", "hono", "@hono/zod-validator"],
+			"devDependencies": ["wrangler"],
 			"envVars": {
 				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
 			},
@@ -89,6 +91,7 @@
 			"title": "Sarvam Vision Server with WebHook",
 			"description": "Hono server with Sarvam Vision API for batch processing and webhook support",
 			"dependencies": ["zod", "hono", "@hono/zod-validator"],
+			"devDependencies": ["wrangler"],
 			"envVars": {
 				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
 			},
@@ -117,6 +120,7 @@
 			"title": "Sarvam Audio Server with WebHook",
 			"description": "Hono server with Sarvam Audio API for batch processing and webhook support",
 			"dependencies": ["zod", "hono", "@hono/zod-validator"],
+			"devDependencies": ["wrangler"],
 			"envVars": {
 				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
 			},
