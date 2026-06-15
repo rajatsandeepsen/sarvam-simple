@@ -2,6 +2,7 @@ import {
 	AudioLinesIcon,
 	BookOpenTextIcon,
 	EyeIcon,
+	GithubIcon,
 	HouseIcon,
 } from "lucide-react";
 
@@ -25,6 +26,11 @@ const navigationLinks = [
 	{ href: "/vision", icon: EyeIcon, label: "Vision" },
 	{ href: "/audio", icon: AudioLinesIcon, label: "Audio" },
 	{ href: "/docs", icon: BookOpenTextIcon, label: "Docs" },
+	{
+		href: "https://github.com/rajatsandeepsen/sarvam-simple",
+		icon: GithubIcon,
+		label: "GitHub",
+	},
 ];
 
 export default function Header() {

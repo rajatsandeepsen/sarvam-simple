@@ -1,4 +1,9 @@
-# Simple Sarvam
+<a href="https://simple.sarvam.workers.dev">
+    <img alt="cover" src="/public/cover.png" />
+</a>
+
+
+# Sarvam Simple
 
 Use SarvamAI batch processing models in cloudflare workers (serverless) 
 

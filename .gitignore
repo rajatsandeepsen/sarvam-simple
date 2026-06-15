@@ -73,6 +73,5 @@ dist/
 .yarn/
 .wrangler
 
-public/*
 **/test.ts
 **/*.test.ts
