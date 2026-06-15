@@ -1,10 +1,14 @@
-# Feedback to Sarvam AI Team
+# API Feedback Document
+
+These are my feedback after working with Sarvam API for 1.5 years. I forgot most of them. Most of them might already fixed by now. But these are some of the issues i encountered recently.
+
+I'll try my best to be honest about these, because we both want SarvamAI to be the best AI provider, right? 
 
 ### Lack of clarity in API Documentation
 
 I read the entire Sarvam API docs, i saw this simple mistake that might make developers little angry when building stuff from scratch.
 
-#### Speech-to-Text Batch API
+#### 1. Speech-to-Text Batch API
 
 After processing the developer has to go deeper into response object to find the list of output files. It has numeric file names like `0.json`, `1.json`, where these 0 and 1 are based on time not input file name.
 
@@ -21,8 +25,12 @@ const status = await sarvamAudio("/v1/:job_id/status", {
 });
 
 // why why why?
-const outFileId = status.job_details[0].inputs.find((e) => e.file_name === filename)?.file_id;
+const outFileId = status.job_details[0].inputs.find(
+	(e) => e.file_name === filename,
+)?.file_id;
+
 if (!outFileId) throw new Error("Missing out file id");
+
 const outFileName = `${outFileId}.json`;
 
 const downloadUrls = await sarvamAudio("/v1/download-files", {
@@ -32,12 +40,12 @@ const downloadUrls = await sarvamAudio("/v1/download-files", {
 });
 
 // again, i have to select the file
-downloadUrls.download_urls[outFileName].file_url
+downloadUrls.download_urls[outFileName].file_url;
 ```
 
 Whoever designed this API need to get some sleep soon 😭
 
-#### Document Intellience Batch API
+#### 2. Document Intellience Batch API
 
 Comparing to speech-to-text, document intellience API decently well written. But still developer has to pass the file names before even start uploading files. Then why split the APIs into two?
 
@@ -82,7 +90,7 @@ curl -X POST https://api.sarvam.ai/doc-digitization/job/v1 \
 
 Every [example cookbook](https://docs.sarvam.ai/api-reference-docs/cookbook/guides/call-analytics-pipeline) and SDK support is revolved around python. 
 
-Surpise, Surpise. Most of the developer don't use python in production. Python is for ML researchers and Math nerds.
+Surprise, surprise. Most of the developer don't use python in production. Python is for ML researchers and Math nerds.
 
 I use Typescript and GoLang, which is way faster than python.
 
@@ -104,7 +112,7 @@ But i have another example
 
 ```bash
 curl -X POST https://api.sarvam.ai/text-to-speech \
-     -H "api-subscription-key: sk_t8uf1nb3_PmwE2eythwq2TjbPQt6mgBKj" \
+     -H "api-subscription-key: <apiSubscriptionKey>" \
      -H "Content-Type: application/json" \
      -d '{
   "text": "Hello, welcome to Sarvam AI",
@@ -118,11 +126,11 @@ Instead of ignoring the useless `pitch` params, it throws error.
 
 ```json
 {
-  "error": {
-    "message": "Pitch and loudness parameters are currently not supported for the Bulbul V3 model. Please do not pass these values.",
-    "code": "invalid_request_error",
-    "request_id": "20260615_cdd28e9a-8192-4f53-8cf2-225663754f7f"
-  }
+	"error": {
+		"message": "Pitch and loudness parameters are currently not supported for the Bulbul V3 model. Please do not pass these values.",
+		"code": "invalid_request_error",
+		"request_id": "<requestId>"
+	}
 }
 ```
 
@@ -175,3 +183,5 @@ But every other model has no welknown OpenAPI specs in this market right now. Wh
 But most of the western model providers has created very robust SDK for their product. Since Sarvam doest have any, we are forced to use those popular SDKs, but still has to write extra code to translate the specs on runtime.
 
 So I highly encourage Sarvam team to follow the API specs from providers like Groq, ElevenLabs etc.
+
+Sorry for being too honest, but i hope this feedback will help Sarvam to become the best AI provider in the world.

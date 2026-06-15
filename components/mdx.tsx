@@ -4,6 +4,7 @@ import Link from "next/link";
 import type * as React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { CodeBlockCopyButton } from "./code-block-copy-button";
 import { Container } from "./container";
 
 const getNodeText = (node: React.ReactNode): string => {
@@ -207,15 +208,18 @@ export const useMDXComponents = (): MDXComponents => ({
 		/>
 	),
 	pre: ({ className, children, ...props }: React.ComponentProps<"pre">) => {
+		const codeText = getNodeText(children).replace(/\n$/, "");
+
 		return (
 			<pre
 				className={cn(
-					"no-scrollbar my-6 overflow-x-auto rounded-lg border bg-muted/40 p-4 text-sm",
+					"group no-scrollbar relative my-6 overflow-x-auto rounded-lg border bg-muted/40 p-4 pr-14 text-sm",
 					className,
 				)}
 				{...props}
 			>
 				{children}
+				<CodeBlockCopyButton code={codeText} />
 			</pre>
 		);
 	},

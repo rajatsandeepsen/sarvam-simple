@@ -2,6 +2,8 @@
 
 Install Vision server with Cloudflare Queue-based webhook processing.
 
+Because Sarvam Document Intelligence API doesn't work even if you pass webhook url. This is just a temperary work around.
+
 ## Install
 
 ```bash
@@ -26,26 +28,26 @@ import { getVisionServerWithQueue } from "./sarvam/vision/server-queue";
 const app = new Hono().basePath("/api");
 
 const { server, queue } = getVisionServerWithQueue({
-  SARVAM_API_KEY: env.SARVAM_API_KEY,
-  webSocket: true,
-  kvBinding: "KEYVALUE",
-  webHook: {
-    queue: {
-      binding: "QUEUE",
-      // pollDelaySeconds: 30,
-    },
-    baseUrl: "https://simple.sarvam.workers.dev/api/vision",
-    sendEmail: async (email, files) => {
-      // files => [{ filename, url }]
-    },
-  },
+	SARVAM_API_KEY: env.SARVAM_API_KEY,
+	webSocket: true,
+	kvBinding: "KEYVALUE",
+	webHook: {
+		queue: {
+			binding: "QUEUE",
+			// pollDelaySeconds: 30,
+		},
+		baseUrl: "https://simple.sarvam.workers.dev/api/vision",
+		sendEmail: async (email, files) => {
+			// files => [{ filename, url }]
+		},
+	},
 });
 
 app.route("/vision", server);
 
 export default {
-  fetch: app.fetch,
-  queue,
+	fetch: app.fetch,
+	queue,
 };
 ```
 
