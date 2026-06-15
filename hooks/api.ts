@@ -1,15 +1,9 @@
-import { createORPCClient } from "@orpc/client";
-import { RPCLink } from "@orpc/client/fetch";
-import type { RouterClient } from "@orpc/server";
-import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { QueryCache, QueryClient } from "@tanstack/react-query";
-import { env } from "env";
 import { hc } from "hono/client";
 import { HonoReactQuery } from "hono-tanstack-query";
 import { toast } from "sonner";
 import type { AudioServerType } from "@/sarvam/audio/server";
 import type { VisionServerType } from "@/sarvam/vision/server";
-import type { AppRouter } from "@/server/api";
 
 export const queryClient = new QueryClient({
 	queryCache: new QueryCache({
@@ -27,24 +21,10 @@ export const queryClient = new QueryClient({
 });
 
 const baseUrl =
-	env.NEXT_PUBLIC_SERVER_URL ??
+	process.env.NEXT_PUBLIC_SERVER_URL ??
 	(typeof window !== "undefined"
 		? window.location.origin
 		: "http://localhost:4000");
-
-export const link = new RPCLink({
-	url: `${baseUrl}/api`,
-	fetch(url, options) {
-		return fetch(url, {
-			...options,
-			credentials: "include",
-		});
-	},
-});
-
-export const client: RouterClient<AppRouter> = createORPCClient(link);
-
-export const api = createTanstackQueryUtils(client);
 
 export const visionAPI = HonoReactQuery(
 	hc<VisionServerType>(`${baseUrl}/api/vision`, {

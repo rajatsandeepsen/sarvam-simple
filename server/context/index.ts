@@ -1,6 +1,5 @@
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
-import type { StaticContextORPC } from "../api/procedure";
 import type { HonoType } from "./types";
 
 export const createVar = <T extends keyof HonoType["Variables"]>(
@@ -18,5 +17,5 @@ export async function createContext(c: Context<HonoType>) {
 	return {
 		waitUntil,
 		req: c.req.raw,
-	} satisfies StaticContextORPC;
+	};
 }

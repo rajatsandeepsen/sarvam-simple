@@ -84,11 +84,7 @@ export default function Header() {
 													className="flex-row items-center gap-2 py-1.5"
 													href={link.href}
 												>
-													<Icon
-														aria-hidden="true"
-														className="text-muted-foreground/80"
-														size={16}
-													/>
+													<Icon aria-hidden="true" size={16} />
 													<span>{link.label}</span>
 												</NavigationMenuLink>
 											</NavigationMenuItem>
@@ -106,14 +102,10 @@ export default function Header() {
 								return (
 									<NavigationMenuItem key={link.label}>
 										<NavigationMenuLink
-											className="flex-row items-center gap-2 py-1.5 font-medium text-foreground hover:text-primary"
+											className="flex-row items-center gap-2 py-1.5 font-medium text-foreground"
 											href={link.href}
 										>
-											<Icon
-												aria-hidden="true"
-												className="text-muted-foreground/80"
-												size={16}
-											/>
+											<Icon aria-hidden="true" size={16} />
 											<span>{link.label}</span>
 										</NavigationMenuLink>
 									</NavigationMenuItem>
@@ -124,10 +116,7 @@ export default function Header() {
 				</div>
 
 				<div className="flex items-center">
-					<a
-						className="text-primary hover:text-primary/90"
-						href="https://sarvam.ai"
-					>
+					<a className="text-primary" href="https://sarvam.ai">
 						<Logo />
 					</a>
 				</div>
