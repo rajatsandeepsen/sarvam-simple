@@ -2,10 +2,176 @@
 
 ### Lack of clarity in API Documentation
 
+I read the entire Sarvam API docs, i saw this simple mistake that might make developers little angry when building stuff from scratch.
+
+#### Speech-to-Text Batch API
+
+After processing the developer has to go deeper into response object to find the list of output files. It has numeric file names like `0.json`, `1.json`, where these 0 and 1 are based on time not input file name.
+
+Why let the developer guess the file name & extensions, when API can gave the correct name?
+
+eg:
+
+```ts
+// A custom API i wrote for my special usecase
+const sarvamAudio = createSarvamAudio(env.SARVAM_API_KEY);
+
+const status = await sarvamAudio("/v1/:job_id/status", {
+	params: { job_id },
+});
+
+// why why why?
+const outFileId = status.job_details[0].inputs.find((e) => e.file_name === filename)?.file_id;
+if (!outFileId) throw new Error("Missing out file id");
+const outFileName = `${outFileId}.json`;
+
+const downloadUrls = await sarvamAudio("/v1/download-files", {
+	// why i have to pass the file name again to get URLs?
+	// Just give me all the file donwload url
+	body: { job_id, files: [inFileName] },
+});
+
+// again, i have to select the file
+downloadUrls.download_urls[outFileName].file_url
+```
+
+Whoever designed this API need to get some sleep soon 😭
+
+#### Document Intellience Batch API
+
+Comparing to speech-to-text, document intellience API decently well written. But still developer has to pass the file names before even start uploading files. Then why split the APIs into two?
+
+eg:
+```ts
+const filename = "simple.pdf";
+
+const data = await sarvamVision("/v1/upload-files", {
+	body: {
+		job_id,
+		files: [filename], // why?, why not accept no_of_files?
+	},
+	throw: true,
+});
+
+const uploadUrl = data?.upload_urls[filename].file_url;
+```
+
+Just gave the developer a single upload url, and let the developer upload files or an entire folder without worring about filenames.
+
 ### WebHook doesn't work
+
+Webhook doesn't work in [document-intelligence](https://docs.sarvam.ai/api-reference-docs/document-intelligence/initialise#request.body.callback).
+
+I run the following req, i got the final zip files, but i haven't got any req in my server.
+
+```bash
+curl -X POST https://api.sarvam.ai/doc-digitization/job/v1 \
+     -H "api-subscription-key: <apiSubscriptionKey>" \
+     -H "Content-Type: application/json" \
+     -d '{
+     		"job_parameters": {
+         		"output_format": "md"
+           	},
+     		"callback": {
+         		"url": "https://https://simple.sarvam.workers.dev/api/vision/1234/webhook"
+           	}
+     }'
+```
 
 ### Lack of SDKs and Example to use in different languages
 
-### Not following API versioning
+Every [example cookbook](https://docs.sarvam.ai/api-reference-docs/cookbook/guides/call-analytics-pipeline) and SDK support is revolved around python. 
+
+Surpise, Surpise. Most of the developer don't use python in production. Python is for ML researchers and Math nerds.
+
+I use Typescript and GoLang, which is way faster than python.
+
+When i was in a hackathon, i tried to use Sarvam AI in project. Turns out one of the popular agentic developer package called `vercel's ai-sdk` does't have Sarvam provider support.
+
+I created one from scratch. Check it out. [sarvam-ai-sdk](https://github.com/sarvamai/sarvam-ai-sdk)
+
+This is true for most of the languages and framework out there. Sarvam API don't follow western OpenAPI specs which leads to friction in using Sarvam.
 
 ### Not following API versioning
+
+When bulbul:3 was added the previous model throws error when ever we accidently use new models params into old model.
+
+Instead of migrating from v1 to v2, there are no API versioning and the new params are added to the same endpoint which creates confusion and breaks the existing implementation.
+
+I don't have an example to show, becaude bulbul:1 has been deprecated.
+
+But i have another example
+
+```bash
+curl -X POST https://api.sarvam.ai/text-to-speech \
+     -H "api-subscription-key: sk_t8uf1nb3_PmwE2eythwq2TjbPQt6mgBKj" \
+     -H "Content-Type: application/json" \
+     -d '{
+  "text": "Hello, welcome to Sarvam AI",
+  "target_language_code": "en-IN",
+  "model": "bulbul:v3",
+  "pitch": 7
+}'
+```
+
+Instead of ignoring the useless `pitch` params, it throws error.
+
+```json
+{
+  "error": {
+    "message": "Pitch and loudness parameters are currently not supported for the Bulbul V3 model. Please do not pass these values.",
+    "code": "invalid_request_error",
+    "request_id": "20260615_cdd28e9a-8192-4f53-8cf2-225663754f7f"
+  }
+}
+```
+
+### Javascript SDK Limited to NodeJS Env
+
+Im talking about [sarvamai](https://www.npmjs.com/package/sarvamai) npm sdk.
+
+Here is a simple example to use [documentIntelligence](https://docs.sarvam.ai/api-reference-docs/api-guides-tutorials/document-digitization/overview) api
+
+```ts
+import { SarvamAIClient } from "sarvamai";
+
+const client = new SarvamAIClient();
+
+const job = await client.documentIntelligence.createJob(...);
+await job.uploadFile(...);
+
+await job.start();
+
+const status = await job.waitUntilComplete(); // this works in statefull server
+
+await job.downloadOutput(...);
+```
+
+But in production most of the poor developers (like me) use serverless enviroment to build products.
+
+In cloudflare worker, this SDK is half useless. We can't wait for it complete. We run queue or cron job to check the completions.
+
+But this SDK won't let us recreate `job` without creating new job.
+
+So we need a new method called `recreateJob(job_id)`.
+
+```ts
+import { SarvamAIClient } from "sarvamai";
+
+const client = new SarvamAIClient(...);
+
+// solution
+const job = await client.documentIntelligence.recreateJob(job_id)
+
+// run anywhere without creating new job
+await job.uploadFile(...);
+```
+### Not following Popular OpenAPI specs
+
+Sarvam Chat Completion uses OpenAI OpenAPI specs, which is great. 
+
+But every other model has no welknown OpenAPI specs in this market right now. Which is a common problem for all the ML providers out there.
+
+But most of the western model providers has created very robust SDK for their product. Since Sarvam doest have any, we are forced to use those popular SDKs, but still has to write extra code to translate the specs on runtime.
+
+So I highly encourage Sarvam team to follow the API specs from providers like Groq, ElevenLabs etc.
