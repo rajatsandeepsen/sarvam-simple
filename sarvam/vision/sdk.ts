@@ -1,4 +1,4 @@
-import { createSarvamVision } from "./api";
+import { createSarvamVision } from "@/sarvam/vision/api";
 
 export const visionJobSDK = (
 	job_id: string,

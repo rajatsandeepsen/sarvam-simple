@@ -5,8 +5,8 @@ import {
 	audioJobParametersSchema,
 	createSarvamAudio,
 	uploadSingleFile,
-} from "./api";
-import { audioJobSDK, generateId } from "./sdk";
+} from "@/sarvam/audio/api";
+import { audioJobSDK, generateId } from "@/sarvam/audio/sdk";
 
 const idParamSchema = z.object({
 	id: z.string().min(1),

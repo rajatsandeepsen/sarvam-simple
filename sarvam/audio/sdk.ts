@@ -1,4 +1,4 @@
-import { createSarvamAudio } from "./api";
+import { createSarvamAudio } from "@/sarvam/audio/api";
 
 export const audioJobSDK = (
 	job_id: string,

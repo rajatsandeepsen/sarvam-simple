@@ -1,0 +1,67 @@
+# Vision Server Webhook
+
+Install a Hono Vision server with webhook + KV support for async batch workflows.
+
+## Install
+
+```bash
+bunx shadcn@latest add rajatsandeepsen/sarvam-simple/vision-server-webhook
+```
+
+## Environment Variable
+
+Get your key from [sarvam.ai](https://dashboard.sarvam.ai)
+
+```env
+SARVAM_API_KEY=your_api_key_here
+```
+
+## Mount in your Hono app
+
+```ts
+import { Hono } from "hono";
+import visionServer from "./sarvam/vision/server";
+
+const app = new Hono();
+
+app.route(
+  "/vision",
+  visionServer({
+    kvBinding: "KV", // your Worker KV binding name
+    webHook: {
+      authToken: "your-callback-token",
+      sendEmail: async (email, files) => {
+        // files => [{ filename, url }]
+      },
+    },
+  }),
+);
+
+export default app;
+```
+
+## Routes
+
+- `POST /vision/upload`
+- `POST /vision/:id/upload`
+- `POST /vision/:id/status`
+- `POST /vision/:id/download`
+- `POST /vision/:id/email`
+- `POST /vision/:id/webhook`
+
+## Usage flow
+
+1. Client uploads files to `/vision/upload` and receives `{ id }`.
+2. Server stores `{ job_id, email? }` in KV (if configured).
+3. Sarvam calls `/vision/:id/webhook` after processing.
+4. Server resolves `id -> job_id`, downloads output URLs, then runs `sendEmail(email, files)`.
+
+## Important
+
+`getWebHook()` in `sarvam/utils.ts` has a placeholder callback URL. Update it to your deployed API base URL.
+
+```ts
+url: `https://simple.sarvam.workers.dev/api/${type}/${id}/webhook`
+```
+
+You can also skip webhook mode and just poll `/:id/status` + `/:id/download`.

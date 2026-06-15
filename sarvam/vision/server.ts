@@ -12,8 +12,8 @@ import {
 	createSarvamVision,
 	uploadSingleFile,
 	visionJobParametersSchema,
-} from "./api";
-import { generateId, visionJobSDK } from "./sdk";
+} from "@/sarvam/vision/api";
+import { generateId, visionJobSDK } from "@/sarvam/vision/sdk";
 
 const idParamSchema = z.object({
 	id: z.string().min(1),
