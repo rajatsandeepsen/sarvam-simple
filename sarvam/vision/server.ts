@@ -1,3 +1,4 @@
+import type { Queue } from "@cloudflare/workers-types";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { upgradeWebSocket } from "hono/cloudflare-workers";
@@ -38,6 +39,11 @@ const visionServer = <KV extends string>({
 	kvBinding?: KV;
 	webSocket?: boolean;
 	webHook?: {
+		queue?: {
+			binding: string;
+			delaySeconds?: number;
+			pollDelaySeconds?: number;
+		};
 		baseUrl: string;
 		authToken?: string;
 		sendEmail?: (
@@ -113,6 +119,19 @@ const visionServer = <KV extends string>({
 						);
 
 						await api.start();
+
+						const queue = webHook?.queue?.binding
+							? ((c.env as Record<string, unknown>)[webHook.queue.binding] as
+									| Queue
+									| undefined)
+							: undefined;
+
+						if (queue && webhookId) {
+							await queue.send(
+								{ id: webhookId },
+								{ delaySeconds: webHook?.queue?.delaySeconds ?? 30 },
+							);
+						}
 					})(),
 				);
 
@@ -168,6 +187,19 @@ const visionServer = <KV extends string>({
 						);
 
 						await api.start();
+
+						const queue = webHook?.queue?.binding
+							? ((c.env as Record<string, unknown>)[webHook.queue.binding] as
+									| Queue
+									| undefined)
+							: undefined;
+
+						if (queue && id) {
+							await queue.send(
+								{ id },
+								{ delaySeconds: webHook?.queue?.delaySeconds ?? 30 },
+							);
+						}
 					})(),
 				);
 

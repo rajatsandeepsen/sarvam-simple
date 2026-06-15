@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import audioServer from "@/sarvam/audio/server";
-import visionServer from "@/sarvam/vision/server";
+import { getVisionServerWithQueue } from "@/sarvam/vision/server-queue";
 import { createVar } from "@/server/context";
 import { sendEmail } from "./context/email";
 import type { HonoType } from "./context/types";
@@ -45,28 +45,30 @@ app.use(
 
 app.use(createVar("kv", (c) => c.env.KEYVALUE));
 
-app.route(
-	"/vision",
-	visionServer({
-		SARVAM_API_KEY: env.SARVAM_API_KEY,
-		webSocket: true,
-		kvBinding: "KEYVALUE",
-		webHook: {
-			baseUrl: "https://simple.sarvam.workers.dev/api/vision",
-			sendEmail: async (email, data) => {
-				sendEmail({
-					from: "<Simple Sarvam> dev@manolo.in",
-					to: email,
-					text: [
-						`Click on the link to start downloading`,
-						...data.map((file) => `${file.filename}: ${file.url}`),
-					].join("\n"),
-					subject: "Your vision files are ready to download -  Simple Sarvam",
-				});
-			},
+const { server, queue } = getVisionServerWithQueue({
+	SARVAM_API_KEY: env.SARVAM_API_KEY,
+	webSocket: true,
+	kvBinding: "KEYVALUE",
+	webHook: {
+		queue: {
+			binding: "QUEUE",
 		},
-	}),
-);
+		baseUrl: "https://simple.sarvam.workers.dev/api/vision",
+		sendEmail: async (email, data) => {
+			sendEmail({
+				from: "<Simple Sarvam> dev@manolo.in",
+				to: email,
+				text: [
+					`Click on the link to start downloading`,
+					...data.map((file) => `${file.filename}: ${file.url}`),
+				].join("\n"),
+				subject: "Your vision files are ready to download -  Simple Sarvam",
+			});
+		},
+	},
+});
+
+app.route("/vision", server);
 
 app.route(
 	"/audio",
@@ -94,4 +96,5 @@ app.route(
 export default {
 	fetch: app.fetch,
 	scheduled: cron.scheduled,
-};
+	queue,
+} satisfies ExportedHandler<HonoType["Bindings"]>;

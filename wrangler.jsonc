@@ -27,7 +27,22 @@
 			"id": "ab805c7cb1a24c93b65b8160acdd4086",
 			"preview_id": "ab805c7cb1a24c93b65b8160acdd4086"
 		}
-	]
+	],
+	"queues": {
+		"producers": [
+			{
+				"binding": "QUEUE",
+				"queue": "sarvam-simple"
+			}
+		],
+		"consumers": [
+			{
+				"queue": "sarvam-simple",
+				"max_batch_size": 10,
+				"dead_letter_queue": "my-queue-dlq"
+			}
+		]
+	}
 	// "migrations": [
 	// 	{
 	// 		"tag": "v1",
