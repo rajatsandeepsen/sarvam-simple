@@ -1,0 +1,65 @@
+# Vision Server Queue
+
+Install Vision server with Cloudflare Queue-based webhook processing.
+
+## Install
+
+```bash
+bunx shadcn@latest add rajatsandeepsen/sarvam-simple/vision-server-queue
+```
+
+## Environment Variable
+
+Get your key from [sarvam.ai](https://dashboard.sarvam.ai)
+
+```env
+SARVAM_API_KEY=your_api_key_here
+```
+
+## Usage
+
+```ts
+import { env } from "env";
+import { Hono } from "hono";
+import { getVisionServerWithQueue } from "./sarvam/vision/server-queue";
+
+const app = new Hono().basePath("/api");
+
+const { server, queue } = getVisionServerWithQueue({
+  SARVAM_API_KEY: env.SARVAM_API_KEY,
+  webSocket: true,
+  kvBinding: "KEYVALUE",
+  webHook: {
+    queue: {
+      binding: "QUEUE",
+      // pollDelaySeconds: 30,
+    },
+    baseUrl: "https://simple.sarvam.workers.dev/api/vision",
+    sendEmail: async (email, files) => {
+      // files => [{ filename, url }]
+    },
+  },
+});
+
+app.route("/vision", server);
+
+export default {
+  fetch: app.fetch,
+  queue,
+};
+```
+
+## Flow
+
+1. `POST /vision/upload` returns `{ id }` and stores job mapping in KV.
+2. Sarvam calls your webhook route.
+3. Queue handler checks job status using KV + job id mapping.
+4. If job is still running, message is requeued (default 30s delay).
+5. On completion, download URLs are fetched and `sendEmail(email, files)` is called.
+
+## Required bindings
+
+- KV binding name used in `kvBinding` (example: `KEYVALUE`)
+- Queue binding name used in `webHook.queue.binding` (example: `QUEUE`)
+
+If queue binding is missing, messages are retried using `msg.retry()` fallback behavior.

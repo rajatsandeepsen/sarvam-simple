@@ -3,9 +3,9 @@ import type {
 	MessageBatch,
 	Queue,
 } from "@cloudflare/workers-types";
-import { getCollection, getKV, type JobCollection } from "../utils";
-import { visionJobSDK } from "./sdk";
-import type visionServer from "./server";
+import { getCollection, getKV, type JobCollection } from "@/sarvam//utils";
+import { visionJobSDK } from "@/sarvam/vision/sdk";
+import type visionServer from "@/sarvam/vision/server";
 
 type QueueHandler = ExportedHandler["queue"];
 type QueueMessageBody = string | { id?: string };

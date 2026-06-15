@@ -138,6 +138,27 @@
 					"target": "~/sarvam/utils.ts"
 				}
 			]
+		},
+		{
+			"name": "vision-server-queue",
+			"type": "registry:item",
+			"title": "Sarvam Vision Server with Queue for Webhook",
+			"description": "Hono server with Sarvam Vision API for batch processing and Queue for Webhook",
+			"registryDependencies": [
+				"rajatsandeepsen/sarvam-simple/vision-server-webhook"
+			],
+			"files": [
+				{
+					"path": "sarvam/vision/server-queue.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/vision/server-queue.ts"
+				},
+				{
+					"path": "sarvam/vision/queue.ts",
+					"type": "registry:file",
+					"target": "~/sarvam/vision/queue.ts"
+				}
+			]
 		}
 	]
 }
