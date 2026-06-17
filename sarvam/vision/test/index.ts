@@ -72,3 +72,5 @@ const x6 = await sarvamVision("/v1/:job_id/download-files", {
 	throw: true,
 });
 console.log(x6);
+
+console.log(x6.download_urls[filename].file_url)

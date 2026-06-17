@@ -65,3 +65,32 @@ export default {
 - Queue binding name used in `webHook.queue.binding` (example: `QUEUE`)
 
 If queue binding is missing, messages are retried using `msg.retry()` fallback behavior.
+
+```json
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	// rest of the config
+	"kv_namespaces": [
+		{
+			"binding": "KEYVALUE",
+			"id": "<kv_id>",
+			"preview_id": "<kv_id>"
+		}
+	],
+	"queues": {
+		"producers": [
+			{
+				"binding": "QUEUE",
+				"queue": "<queue_name>"
+			}
+		],
+		"consumers": [
+			{
+				"queue": "<queue_name>",
+				"max_batch_size": 10,
+				"dead_letter_queue": "my-queue-dlq"
+			}
+		]
+	}
+}
+```
