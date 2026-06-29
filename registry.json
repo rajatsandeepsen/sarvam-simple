@@ -1,7 +1,7 @@
 {
 	"$schema": "https://ui.shadcn.com/schema/registry.json",
 	"name": "sarvam-simple",
-	"homepage": "https://github.com/rajatsandeepsen/sarvam-simple",
+	"homepage": "https://github.com/sarvam-ai/simple",
 	"items": [
 		{
 			"name": "vision-api",
@@ -47,7 +47,7 @@
 			"envVars": {
 				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
 			},
-			"registryDependencies": ["rajatsandeepsen/sarvam-simple/vision-api"],
+			"registryDependencies": ["sarvam-ai/simple/vision-api"],
 			"files": [
 				{
 					"path": "sarvam/vision/simple-server.ts",
@@ -71,7 +71,7 @@
 			"envVars": {
 				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
 			},
-			"registryDependencies": ["rajatsandeepsen/sarvam-simple/audio-api"],
+			"registryDependencies": ["sarvam-ai/simple/audio-api"],
 			"files": [
 				{
 					"path": "sarvam/audio/simple-server.ts",
@@ -95,7 +95,7 @@
 			"envVars": {
 				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
 			},
-			"registryDependencies": ["rajatsandeepsen/sarvam-simple/vision-api"],
+			"registryDependencies": ["sarvam-ai/simple/vision-api"],
 			"files": [
 				{
 					"path": "sarvam/vision/server.ts",
@@ -124,7 +124,7 @@
 			"envVars": {
 				"SARVAM_API_KEY": "<Sign up at https://dashboard.sarvam.ai and grab a free API key.>"
 			},
-			"registryDependencies": ["rajatsandeepsen/sarvam-simple/audio-api"],
+			"registryDependencies": ["sarvam-ai/simple/audio-api"],
 			"files": [
 				{
 					"path": "sarvam/audio/server.ts",
@@ -148,9 +148,7 @@
 			"type": "registry:item",
 			"title": "Sarvam Vision Server with Queue for Webhook",
 			"description": "Hono server with Sarvam Vision API for batch processing and Queue for Webhook",
-			"registryDependencies": [
-				"rajatsandeepsen/sarvam-simple/vision-server-webhook"
-			],
+			"registryDependencies": ["sarvam-ai/simple/vision-server-webhook"],
 			"files": [
 				{
 					"path": "sarvam/vision/server-queue.ts",

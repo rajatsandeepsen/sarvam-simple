@@ -76,6 +76,9 @@ export const getQueue = <KVString extends string>({
 		const kv = getKV({ env }, kvBinding);
 
 		if (!kv) {
+			console.log("[vision-queue] KV binding missing, acking all messages", {
+				count: batch.messages.length,
+			});
 			for (const msg of batch.messages) msg.ack();
 			return;
 		}
@@ -83,9 +86,12 @@ export const getQueue = <KVString extends string>({
 		for (const msg of batch.messages as MessageBatch<QueueMessageBody>["messages"]) {
 			const id = getMessageId(msg.body);
 			if (!id) {
+				console.log("[vision-queue] Message missing id, acking");
 				msg.ack();
 				continue;
 			}
+
+			console.log("[vision-queue] Processing message", { id });
 
 			try {
 				const collection = await getCollection<VisionQueueCollection>(kv, id);
@@ -101,8 +107,14 @@ export const getQueue = <KVString extends string>({
 
 				const api = visionJobSDK(collection.job_id, { SARVAM_API_KEY });
 				const status = await api.getStatus();
+				console.log("[vision-queue] Job status", {
+					id,
+					job_id: collection.job_id,
+					state: status.job_state,
+				});
 
 				if (status.job_state === "Completed") {
+					console.log("[vision-queue] Job completed, sending email", { id });
 					const data = await api.downloadFiles();
 					await webHook.sendEmail(collection.email, data);
 					await kv.put(
@@ -118,6 +130,7 @@ export const getQueue = <KVString extends string>({
 				}
 
 				if (status.job_state === "Failed") {
+					console.log("[vision-queue] Job failed, marking failed_at", { id });
 					await kv.put(
 						id,
 						JSON.stringify({
@@ -130,6 +143,10 @@ export const getQueue = <KVString extends string>({
 				}
 
 				if (isRunningState(status.job_state)) {
+					console.log("[vision-queue] Job still running, requeueing", {
+						id,
+						state: status.job_state,
+					});
 					await requeue({
 						env: env as Record<string, unknown>,
 						msg,
